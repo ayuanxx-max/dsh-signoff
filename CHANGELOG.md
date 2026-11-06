@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2 — 2026-11-06
+
+- 承诺句改回纯文字（加粗、左对齐、正文大小），中英同步；移除 PNG 图片与 docs/assets/。
+- 只改文档，五个 gate 与 CLI 行为未变；自测仍 17 passed / 0 failed。
+
 ## 1.0.1 — 2026-11-06
 
 - README 第一节改为案例式标题：本次 DSH 2.0.22-next 升级后修复 dsh-session-fork-tree 0.9.34 的 bug 里五关各自做了什么（中英同步）。
