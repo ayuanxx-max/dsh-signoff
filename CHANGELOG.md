@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.1 — 2026-11-06
+
+- 提交标记改为严格一次性：`commit-msg` 无论标记是否匹配当前树都会消费掉它，`pre-commit` 写新标记前先清旧的。原来“树变了”的标记会留在 `.signoff/passed`，下一次同树提交可能重复追加 trailer。
+- 自查补 3 项（无标记、陈旧标记、陈旧标记被消费），共 89 项全绿。
+
 ## 3.1.0 — 2026-11-06
 
 - 新增 `commit-msg` 钩子与提交标记：闸门通过后在提交信息里写 `Signoff-Pass: <tree>`，`SIGNOFF_SKIP=1` 时写 `Signoff-Skip:`——`git commit --no-verify` 从此不再是“无记录”，而是“没有标记的提交”。

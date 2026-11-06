@@ -237,7 +237,7 @@ function main() {
     r = run(["hook", "commit-msg", mf], repo);
     check("commit-msg mismatch exit", r.status, 0);
     check("commit-msg mismatch untouched", fs.readFileSync(mf, "utf8"), "mismatch\n");
-    fs.unlinkSync(markerFile);
+    check("commit-msg mismatch consumes marker", fs.existsSync(markerFile) ? 0 : 1, 1);
     r = run(["hook", "commit-msg", mf], repo);
     check("commit-msg without marker exit", r.status, 0);
     check("commit-msg without marker untouched", fs.readFileSync(mf, "utf8"), "mismatch\n");
@@ -337,6 +337,23 @@ function main() {
     r = g(["status"]);
     check("status human trailer", /^trailer\s+enforced$/m.test(r.stdout) ? 1 : 0, 1, r.stdout.trim().replace(/\n/g, " | "));
     check("status human commit-msg", /^commit-msg\s+installed$/m.test(r.stdout) ? 1 : 0, 1);
+
+    // Trailer edge cases: no marker and a stale marker must both leave the message alone.
+    const msgFile = path.join(base, "MSG.txt");
+    fs.writeFileSync(msgFile, "subject\n", "utf8");
+    r = g(["hook", "commit-msg", msgFile]);
+    check("commit-msg without marker exits 0", r.status, 0);
+    check("commit-msg without marker adds nothing", fs.readFileSync(msgFile, "utf8").trim(), "subject");
+    fs.mkdirSync(path.join(repo, ".signoff"), { recursive: true });
+    fs.writeFileSync(
+      path.join(repo, ".signoff", "passed"),
+      JSON.stringify({ tree: "0".repeat(40), mode: "pass", ts: new Date().toISOString() }),
+      "utf8"
+    );
+    r = g(["hook", "commit-msg", msgFile]);
+    check("commit-msg stale marker exits 0", r.status, 0);
+    check("commit-msg stale marker adds nothing", fs.readFileSync(msgFile, "utf8").trim(), "subject");
+    check("commit-msg stale marker consumed", fs.existsSync(path.join(repo, ".signoff", "passed")) ? 0 : 1, 1);
 
     r = g(["uninstall"]);
     check("guard uninstall", fs.existsSync(path.join(hooks, "pre-commit")) ? 0 : 1, 1);
