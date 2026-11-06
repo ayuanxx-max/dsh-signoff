@@ -138,6 +138,61 @@ function main() {
     r = run(["p4", "verify"], repo);
     check("p4 fake rollback refused", r.status, 1);
 
+    // P4 repo-scoped ledger (3.3.0): without SIGNOFF_HOME the ledger lives in the repo,
+    // records carry their repository, and a pre-3.3.0 chain still verifies.
+    const lib = require(path.join(ROOT, "lib", "p4.js"));
+    const rhome = path.join(base, "legacy-home");
+    const rhomeDir = path.join(rhome, ".signoff");
+    fs.mkdirSync(rhomeDir, { recursive: true });
+    const v1body = {
+      ts: "2026-01-01T00:00:00+0000",
+      action: "publish",
+      target: "old@1.0.0",
+      detail: "legacy",
+      rollback: "HEAD",
+      decision: "allow",
+    };
+    const v1rec = Object.assign({}, v1body, { prev: "genesis", hash: lib.digest("genesis", v1body) });
+    fs.writeFileSync(path.join(rhomeDir, "audit.log"), lib.dumpsPy(v1rec, { sortKeys: true }) + os.EOL, "utf8");
+    const noHome = { SIGNOFF_HOME: "", HOME: rhome, USERPROFILE: rhome };
+    r = run(["p4", "verify"], repo, noHome);
+    check("p4 repo ledger seeds legacy chain", r.status, 0, (r.stdout || "").trim());
+    const repoLog = path.join(repo, ".signoff", "audit.log");
+    check("p4 ledger lands in repo", fs.existsSync(repoLog) ? 1 : 0, 1);
+    r = run(["p4", "ask", "--action", "publish", "--target", "scoped"], repo, noHome);
+    const t3 = (r.stdout.match(/ticket (\S+)/) || [])[1];
+    run(["p4", "confirm", "--ticket", t3, "--decision", "allow", "--detail", "s", "--rollback", "HEAD"], repo, noHome);
+    check("p4 record carries repo", /"repo": "[^"]+"/.test(fs.readFileSync(repoLog, "utf8")) ? 1 : 0, 1);
+    const lines = fs.readFileSync(repoLog, "utf8").trim().split(/\r?\n/);
+    const newest = JSON.parse(lines[lines.length - 1]);
+    const lastHash = newest.hash;
+    const foreignBody = {
+      ts: "2026-01-02T00:00:00+0000",
+      action: "publish",
+      target: "elsewhere",
+      detail: "other repo",
+      rollback: "v-missing-tag",
+      decision: "allow",
+      repo: "elsewhere",
+    };
+    const foreign = Object.assign({}, foreignBody, { prev: lastHash, hash: lib.digest(lastHash, foreignBody) });
+    fs.appendFileSync(repoLog, lib.dumpsPy(foreign, { sortKeys: true }) + os.EOL, "utf8");
+    r = run(["p4", "verify"], repo, noHome);
+    check("p4 skips foreign repo entries", r.status, 0, (r.stdout || "").trim());
+    const ownBody = {
+      ts: "2026-01-03T00:00:00+0000",
+      action: "publish",
+      target: "mine",
+      detail: "own repo",
+      rollback: "v-missing-tag",
+      decision: "allow",
+      repo: newest.repo,
+    };
+    const own = Object.assign({}, ownBody, { prev: foreign.hash, hash: lib.digest(foreign.hash, ownBody) });
+    fs.appendFileSync(repoLog, lib.dumpsPy(own, { sortKeys: true }) + os.EOL, "utf8");
+    r = run(["p4", "verify"], repo, noHome);
+    check("p4 still checks own entries", r.status, 1, (r.stdout || "").trim());
+
     // P5
     r = run(["p5", "docs/dirty.md"], repo);
     check("p5 dirty red", r.status, 1);

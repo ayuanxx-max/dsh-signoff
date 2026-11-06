@@ -120,11 +120,11 @@ signoff p4 export --out docs/ledger.md
 signoff p5 docs README.md
 ```
 
-每关都会把结果写到 `.signoff/pN.json`（P4 的账本在 `~/.signoff/audit.log`，可用 `SIGNOFF_HOME` 改位置），便于 CI 存档与二次核对。
+每关都会把结果写到 `.signoff/pN.json`（P4 的账本在仓库内 `.signoff/audit.log`，不在仓库里时退回 `~/.signoff/audit.log`；可用 `SIGNOFF_HOME` 改位置），便于 CI 存档与二次核对。
 
 ## 六、边界（先说清不做什么）
 
-- **只读不改**：五关不改你的代码，只在 `.signoff/` 与 `~/.signoff/` 写结果。
+- **只读不改**：五关不改你的代码，只在 `.signoff/`（P4 账本也在这里；非仓库目录才用 `~/.signoff/`）写结果。
 - **P1 只看退出码**：不做交互、不猜意图；命令怎么写由你给。
 - **P2 不生成断言**：断言要人写；它只负责数、分级、拦住“没到 scenario 级”的降级。
 - **P4 是本机哈希链**，不是外部公证：能发现事后改账，不能防有人连链一起重写。要更强证据得接外部时间戳。
@@ -224,7 +224,7 @@ signoff p5 docs README.md
 
 ### Boundaries
 
-- Read-only with respect to your code: results go to `.signoff/` and `~/.signoff/`.
+- Read-only with respect to your code: results go to `.signoff/` (the P4 ledger included; `~/.signoff/` only outside a repo).
 - P1 judges exit codes only.
 - P2 counts and grades; it does not write assertions for you.
 - P4 is a local hash chain, not external notarisation: it detects edits after the fact, and cannot stop someone rewriting the whole chain.

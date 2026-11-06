@@ -44,7 +44,7 @@
 
 ## P4 `gates/p4_ledger.py`
 
-动作类别固定为 `config` / `profile` / `publish`，账本在 `~/.signoff/audit.log`（`SIGNOFF_HOME` 可改）。
+动作类别固定为 `config` / `profile` / `publish`，账本按仓库隔离：仓库内 `.signoff/audit.log`（非仓库目录退回 `~/.signoff/audit.log`，`SIGNOFF_HOME` 可强制指定）。每条记录带 `repo` 字段，`verify` 只校验本仓库的回滚点。
 
 | 子命令 | 行为 |
 | --- | --- |
@@ -70,7 +70,7 @@
 | 暂存的文档（README、docs/ 下） | P5 |
 | 能探到测试命令（package.json 的 test，或 pytest） | P1 |
 | 存在 `verify/scenarios/` | P2 `--strict` |
-| 存在账本（`SIGNOFF_HOME` 或 `~/.signoff/audit.log`） | P4 `verify` |
+| 存在账本（仓库内 `.signoff/audit.log` 或 `~/.signoff/audit.log`） | P4 `verify` |
 
 缓存文件 `.signoff/cache.json` 以 `git write-tree` 的结果为键：同一份暂存内容重复提交只判一次。
 `SIGNOFF_SKIP=1` 跳过并写 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身口子，无记录，因此 CI 是不可绕过的边界。

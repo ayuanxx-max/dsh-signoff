@@ -18,16 +18,93 @@ import time
 from pathlib import Path
 
 ACTIONS = ("config", "profile", "publish")
-HOME = Path(os.environ.get("SIGNOFF_HOME") or (Path.home() / ".signoff"))
-LOG = HOME / "audit.log"
-TICKETS = HOME / "tickets"
+BODY_KEYS_V1 = ("ts", "action", "target", "detail", "rollback", "decision")
+# 3.3.0 records also hash their repository; pre-3.3.0 records have no `repo` key and keep
+# verifying under the v1 tuple. Mirrors lib/p4.js so the two engines stay byte-compatible.
+BODY_KEYS_V2 = BODY_KEYS_V1 + ("repo",)
+
+
+def repo_root() -> Path | None:
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, errors="replace"
+        )
+    except OSError:
+        return None
+    if r.returncode != 0:
+        return None
+    return Path(r.stdout.strip())
+
+
+def repo_key() -> str:
+    root = repo_root()
+    if root is None:
+        return ""
+    out = str(root).replace("\\", "/").rstrip("/")
+    return out.lower() if os.name == "nt" else out
+
+
+def signoff_dir() -> Path:
+    override = os.environ.get("SIGNOFF_HOME")
+    if override:
+        return Path(override)
+    root = repo_root()
+    return (root / ".signoff") if root is not None else (Path.home() / ".signoff")
+
+
+def ledger_path() -> Path:
+    return signoff_dir() / "audit.log"
+
+
+def tickets_dir() -> Path:
+    return signoff_dir() / "tickets"
+
+
+def body_for(rec: dict) -> dict:
+    keys = BODY_KEYS_V2 if "repo" in rec else BODY_KEYS_V1
+    return {k: rec.get(k) for k in keys}
+
+
+def seed_ledger() -> None:
+    target = ledger_path()
+    if target.exists() or os.environ.get("SIGNOFF_HOME"):
+        return
+    legacy = Path.home() / ".signoff" / "audit.log"
+    if legacy.resolve() == target.resolve() or not legacy.exists():
+        return
+    lines = [line.strip() for line in legacy.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not lines:
+        return
+    for line in lines:
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            return
+        rb = rec.get("rollback") or ""
+        if not rb or rb == "no-git":
+            continue
+        if " " in rb:
+            return
+        try:
+            r = subprocess.run(
+                ["git", "rev-parse", "--verify", "--quiet", rb], capture_output=True, text=True, errors="replace"
+            )
+        except OSError:
+            continue
+        if r.returncode != 0:
+            return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8", newline="") as fh:
+        fh.write(os.linesep.join(lines) + os.linesep)
 
 
 def entries() -> list[dict]:
-    if not LOG.exists():
+    seed_ledger()
+    log = ledger_path()
+    if not log.exists():
         return []
     out = []
-    for line in LOG.read_text(encoding="utf-8").splitlines():
+    for line in log.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line:
             out.append(json.loads(line))
@@ -48,9 +125,9 @@ def git_describe() -> str:
 
 
 def ask(action: str, target: str, ttl: int) -> int:
-    TICKETS.mkdir(parents=True, exist_ok=True)
+    tickets_dir().mkdir(parents=True, exist_ok=True)
     token = secrets.token_hex(4)
-    (TICKETS / f"{token}.json").write_text(
+    (tickets_dir() / f"{token}.json").write_text(
         json.dumps({"token": token, "action": action, "target": target, "expires": time.time() + ttl}, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
@@ -60,7 +137,7 @@ def ask(action: str, target: str, ttl: int) -> int:
 
 
 def confirm(ticket: str, decision: str, detail: str, rollback: str) -> int:
-    path = TICKETS / f"{ticket}.json"
+    path = tickets_dir() / f"{ticket}.json"
     if not path.exists():
         print(f"[p4] unknown or already used ticket {ticket}")
         return 2
@@ -84,10 +161,11 @@ def confirm(ticket: str, decision: str, detail: str, rollback: str) -> int:
         "detail": detail,
         "rollback": rollback,
         "decision": decision,
+        "repo": repo_key(),
     }
     record = dict(body, prev=prev, hash=digest(prev, body))
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as fh:
+    ledger_path().parent.mkdir(parents=True, exist_ok=True)
+    with ledger_path().open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
     print(json.dumps({"ok": decision == "allow", "hash": record["hash"], "rollback": rollback}, ensure_ascii=False))
     return 0 if decision == "allow" else 1
@@ -95,15 +173,19 @@ def confirm(ticket: str, decision: str, detail: str, rollback: str) -> int:
 
 def verify() -> int:
     chain = entries()
+    current = repo_key()
     problems: list[str] = []
     prev = "genesis"
     for i, rec in enumerate(chain, 1):
-        body = {k: rec.get(k) for k in ("ts", "action", "target", "detail", "rollback", "decision")}
+        body = body_for(rec)
         if rec.get("prev") != prev:
             problems.append(f"line {i}: prev hash mismatch")
         if rec.get("hash") != digest(prev, body):
             problems.append(f"line {i}: content hash mismatch (edited after the fact)")
         prev = rec.get("hash", "")
+        owner = rec.get("repo") or ""
+        if owner and current and owner != current:
+            continue
         rb = rec.get("rollback") or ""
         if not rb:
             problems.append(f"line {i}: no rollback point recorded")
