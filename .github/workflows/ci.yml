@@ -1,0 +1,71 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / node ${{ matrix.node }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [18, 20, 22]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: toolchain
+        run: |
+          node --version
+          git --version
+      - name: self-test
+        run: node test/selftest.js
+
+  parity:
+    name: python parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: self-test (python engine)
+        run: python3 test/selftest.py
+
+  smoke:
+    name: npm pack + global install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: pack and install
+        run: |
+          npm pack --silent > pack.txt
+          tarball=$(tail -n 1 pack.txt)
+          npm install -g "./$tarball"
+          signoff --version
+          git config --global user.name ci
+          git config --global user.email ci@example.com
+          rm -rf /tmp/guarded && mkdir -p /tmp/guarded && cd /tmp/guarded
+          git init -q .
+          echo hi > a.txt && git add . && git commit -qm "before guard"
+          signoff init --no-ci
+          signoff doctor
+          echo two > b.txt && git add . && git commit -qm "after guard"
+          signoff audit --since-install
+          signoff doctor --json > doctor.json
+          node -e "const d=require('/tmp/guarded/doctor.json'); if(!d.ok||d.fails) process.exit(1); console.log('doctor ok,', d.checks.length, 'checks')"
