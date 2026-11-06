@@ -440,6 +440,31 @@ function main() {
     check("uninstall removes commit-msg", fs.existsSync(path.join(hooks, "commit-msg")) ? 0 : 1, 1);
     r = g(["init", "--dry-run", "--no-ci"]);
     check("guard dry-run writes nothing", fs.existsSync(path.join(hooks, "pre-commit")) ? 0 : 1, 1);
+
+    // doctor: a read-only self-check that has to agree with the gates it summarizes.
+    const drepo = path.join(base, "doctor-repo");
+    fs.mkdirSync(drepo, { recursive: true });
+    gitOut(["init", "-q", "."], drepo);
+    fs.writeFileSync(path.join(drepo, "a.txt"), "a", "utf8");
+    gitOut(["add", "."], drepo);
+    gitOut(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "a"], drepo);
+    const dhome = path.join(base, "doctor-home");
+    const d = (args) => run(args, drepo, { SIGNOFF_HOME: dhome });
+    check("doctor unguarded repo", d(["doctor"]).status, 1);
+    d(["init", "--no-ci"]);
+    check("doctor guarded repo", d(["doctor"]).status, 0, d(["doctor", "--quiet"]).stdout.trim());
+    const dj = JSON.parse(d(["doctor", "--json"]).stdout);
+    check("doctor json ok", dj.ok, true);
+    check("doctor json has checks", dj.checks.length > 10 ? 1 : 0, 1);
+    check("doctor quiet hides ok lines", /^ok /m.test(d(["doctor", "--quiet"]).stdout) ? 1 : 0, 0);
+    check("doctor outside repo", run(["doctor"], path.join(base, "notrepo")).status, 2);
+    fs.writeFileSync(
+      path.join(drepo, ".signoff", "passed"),
+      JSON.stringify({ tree: "a".repeat(40), mode: "pass", ts: new Date().toISOString() }),
+      "utf8"
+    );
+    check("doctor leftover marker warns only", d(["doctor"]).status, 0);
+    check("doctor sees the leftover marker", /leftover/.test(d(["doctor", "--quiet"]).stdout) ? 1 : 0, 1);
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }

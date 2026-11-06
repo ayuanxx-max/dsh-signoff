@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.5.0 — 2026-11-06
+
+- 新增 `signoff doctor [--json] [--quiet]`：回答“为什么它没按预期生效”，只读、不装不改不删。
+- 检查项：Node 版本、git 是否在 PATH、引擎、钩子三件套是否在且可执行、钩子的旧钩子备份（备份了但没串接会警告）、`signoff` 是否在非交互 shell 的 PATH 里、CLI 版本与安装点记录是否一致、`config.json` 字段合法性、`test_cmd` 是否可启动、`.signoff/passed` 残留、`skips.log` 条数、账本链与别仓库条目、安装点之后的缺失提交。
+- 组合既有命令（`status` / `audit --since-install` / `p4 verify`）而不是重算逻辑：doctor 说 ok 和闸门后面判绿不会互相矛盾。
+- 退出码：全绿 0，有失败 1，不在 git 仓库 2；`--quiet` 只打非 ok 项。
+- 自查新增 8 项（未装仓库判 1、装好判 0、`--json` 结构、`--quiet` 过滤、非仓库判 2、标记残留只警告且能被看见），共 111 项全过。
+
 ## 3.4.0 — 2026-11-06
 
 - `signoff init` 记录安装点 `.signoff/installed.json`（`{sha, ts, version}`）；重复 init 不覆盖第一个安装点——装钩子之前的历史是历史，不是失败。

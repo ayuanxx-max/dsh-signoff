@@ -32,6 +32,7 @@ const HELP = `SignOff / 一诺过五关 — make "done" provable
   signoff init [--no-ci] [--prepare] [--quiet]  install hooks + CI so the gates run themselves
   signoff guard [--full]                     run the gate set the hooks use (right now)
   signoff status                             is this repo guarded?
+signoff doctor [--json]                    why is (or isn't) it guarded? read-only self-check
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
   signoff uninstall [--all]                  remove hooks + CI workflow
 
@@ -104,43 +105,13 @@ function guard(sub, args) {
   return r.status === null ? 1 : r.status;
 }
 
-function doctor() {
-  const rows = [
-    ["node", process.version],
-    ["engine", process.env.SIGNOFF_ENGINE === "python" ? `python (${python()})` : "node"],
-    ["gates", path.join(__dirname, "..", "lib")],
-    ["cwd", process.cwd()],
-    ["git", fs.existsSync(".git") ? "yes" : "no"],
-    ["tests/", fs.existsSync("tests") ? "yes" : "no"],
-    ["verify/scenarios/", fs.existsSync("verify/scenarios") ? "yes" : "no"],
-    ["tasks/", fs.existsSync("tasks") ? "yes" : "no"],
-    [".signoff/", fs.existsSync(".signoff") ? "yes" : "no"],
-  ];
-  for (const [k, v] of rows) console.log(`${k.padEnd(20)} ${v}`);
-  let guardLine = "not installed (run: signoff init)";
-  const g = spawnSync(process.execPath, [path.join(__dirname, "..", "bin", "signoff.js"), "status", "--json"], {
-    encoding: "utf8",
-  });
-  if (g.status === 0 && g.stdout) {
-    try {
-      const parsed = JSON.parse(g.stdout);
-      const on = ["pre-commit", "commit-msg", "pre-push", "ci"].filter((k) => parsed.installed[k]);
-      if (on.length) guardLine = `${on.join(", ")} (${parsed.version})`;
-    } catch (e) {
-      /* keep default */
-    }
-  }
-  console.log(`${"guard".padEnd(20)} ${guardLine}`);
-  return 0;
-}
-
 const [cmd, ...rest] = process.argv.slice(2);
 
 if (!cmd || cmd === "-h" || cmd === "--help" || cmd === "help") {
   console.log(HELP);
   process.exit(0);
 }
-if (cmd === "doctor") process.exit(doctor());
+if (cmd === "doctor") process.exit(require("../lib/doctor").run(rest));
 if (cmd === "all") process.exit(runAll(rest));
 if (cmd === "init") process.exit(guard("init", rest));
 if (cmd === "guard") process.exit(guard("guard", rest));
