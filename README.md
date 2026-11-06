@@ -42,6 +42,7 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | --- | --- |
 | `.git/hooks/pre-commit` | 暂存区一变就跑闸门：文档改动 → P5；能探到测试命令 → P1；有 `verify/scenarios/` → P2 `--strict`；有账本 → P4 `verify`。红了直接拒绝提交 |
 | `.git/hooks/pre-push` | push 前跑同一套（`--full`，不吃缓存） |
+| `.git/hooks/commit-msg` | 把 `Signoff-Pass: <tree>`（跳过时 `Signoff-Skip:`）写进提交信息；`signoff audit` 与 CI 据此判断这次提交真的过过闸门 |
 | `.github/workflows/signoff.yml` | 每个 push / PR 跑 `npx dsh-signoff guard --ci`，绕不过去 |
 | `.signoff/config.json` | 测试命令、预算、文档目录；`signoff status` 随时查看 |
 | `.gitignore` | 追加 `.signoff/`，结果不进版本库 |
@@ -50,13 +51,19 @@ signoff all               # p1 + p2 + p5 + p4 verify
 
 三条稳定性措施：**同一份暂存内容只判一次**（命中缓存约 0 ms，反复 `git commit --amend` 不重复付时间）；**失败只打印失败那一关的尾部**（完整日志在 `.signoff/hook.log`）；**超预算直接判红**（默认 180 秒，`--budget` 可改）。
 
-要跳过只有两条路：`SIGNOFF_SKIP=1 git commit …` 会写进 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身的口子、没有记录——所以真正的边界在 CI 那条。
+**绕过的路仍然有，但不再无痕**：`signoff audit --range origin/main..HEAD` 逐个提交核对标记与提交树——缺失就是绕过（`git commit --no-verify`），判红；`SIGNOFF_SKIP=1` 的提交写成 `Signoff-Skip:` 并记进 `.signoff/skips.log`，`--strict` 下同样判红。生成的 CI 里已经带这一步。
+
+**队友为什么也会被守住**：先把 `dsh-signoff` 放进 `devDependencies`（`npm i -D dsh-signoff`），再 `signoff init --prepare`，它会把 `signoff init --quiet` 并进 `package.json` 的 `prepare`，队友 `npm install` 完钩子就有了。没这个依赖时 `--prepare` 会拒绝写入并提示——否则 `npm install` 会因为找不到 CLI 直接失败。
 
 ```bash
 signoff init                 # 装钩子 + CI + 配置
 signoff status               # 这个仓库现在守不守？
 signoff guard --full         # 手动跑同一套（钩子调的就是它）
-signoff uninstall --all      # 卸掉
+signoff uninstall --all
+signoff audit --range origin/main..HEAD   # did these commits really pass the gates?
+signoff init --prepare       # also write it into package.json so npm install installs the hooks      # 卸掉
+signoff audit --range origin/main..HEAD   # 这些提交真过过闸门吗？
+signoff init --prepare       # 同时写进 package.json，队友 install 即装
 ```
 
 ## 三、在其它代码过程里能干什么
@@ -121,7 +128,7 @@ signoff p5 docs README.md
 - **P4 是本机哈希链**，不是外部公证：能发现事后改账，不能防有人连链一起重写。要更强证据得接外部时间戳。
 - **P5 是启发式**：词表可以按团队改（`--allow <rule>` 放行某条），它拦住的是“明显没数字的断言”，不是全部坏文档。
 - **钩子按仓库各装一次**：`signoff init` 写在本机 `.git/hooks/`，别人 clone 不会自动有；CI 那条才是全员生效。
-- **钩子可绕过**：`git commit --no-verify` 不触发；`SIGNOFF_SKIP=1` 会记进 `.signoff/skips.log`。
+- **钩子可绕过，但会留下证据**：`git commit --no-verify` 不触发钩子，提交里就没有 `Signoff-Pass` 标记，`signoff audit`（CI 自动跑）判红；`SIGNOFF_SKIP=1` 写 `Signoff-Skip` 并记进 `.signoff/skips.log`，`--strict` 下判红。
 - **只需要 Node 18+**：闸门与钩子都是 Node；没有 Python、没有其它解释器也能跑完整五关。
 - **不联网**：除 `git` 与本地解释器外不调用外部服务。
 
@@ -161,6 +168,7 @@ One line: **P2 decides whether it is fixed, P5 decides whether I am overclaiming
 | --- | --- |
 | `.git/hooks/pre-commit` | On a change to the index: docs → P5; detectable test command → P1; `verify/scenarios/` → P2 `--strict`; existing ledger → P4 `verify`. A red gate refuses the commit |
 | `.git/hooks/pre-push` | The same set before a push, `--full`, no cache |
+| `.git/hooks/commit-msg` | Writes `Signoff-Pass: <tree>` (or `Signoff-Skip:`) into the message; `signoff audit` and CI use it to tell a gated commit from a bypass |
 | `.github/workflows/signoff.yml` | Every push / PR runs `npx dsh-signoff guard --ci`; not bypassable |
 | `.signoff/config.json` | Test command, budget, doc roots; `signoff status` shows all of it |
 | `.gitignore` | `.signoff/` is appended, so results stay out of the repo |
@@ -169,7 +177,9 @@ Requires **Node 18+ only**: the gates are pure Node (`lib/p*.js`), so no Python 
 
 Three stability measures: the same staged tree is judged once (cache hit ~0 ms, so `git commit --amend` costs nothing); a failure prints only the tail of the failing gate (full log in `.signoff/hook.log`); exceeding the budget (default 180 s) is a red gate, not a silent twenty-minute hook.
 
-Two ways past: `SIGNOFF_SKIP=1 git commit …` is recorded in `.signoff/skips.log`; `git commit --no-verify` is git's own hole and leaves no trace - which is why CI is the real boundary.
+**A bypass leaves a trace**: `signoff audit --range origin/main..HEAD` checks every commit's marker against its tree. Missing means the gates were skipped (`git commit --no-verify`) and is red; a `SIGNOFF_SKIP=1` commit carries `Signoff-Skip` and turns red under `--strict`. The generated CI already runs this step.
+
+**Why a teammate ends up guarded too**: with `dsh-signoff` in `devDependencies` (`npm i -D dsh-signoff`), `signoff init --prepare` appends `signoff init --quiet` to `package.json`'s `prepare`, so their `npm install` installs the hooks; without it, CI is the backstop.
 
 ### Beyond this fix: other code work
 
@@ -218,7 +228,7 @@ signoff p5 docs README.md
 - P4 is a local hash chain, not external notarisation: it detects edits after the fact, and cannot stop someone rewriting the whole chain.
 - P5 is heuristic; tune the word list with `--allow <rule>`.
 - Hooks are installed per clone; a fresh clone needs `signoff init` again, while CI covers everyone.
-- Hooks are bypassable: `git commit --no-verify` skips them silently, `SIGNOFF_SKIP=1` is recorded.
+- Hooks are bypassable, but not silently: `git commit --no-verify` leaves no `Signoff-Pass` marker, so `signoff audit` (run by CI) fails the range; `SIGNOFF_SKIP=1` leaves `Signoff-Skip` and is red under `--strict`.
 - Needs Node 18+ only; no Python and no other interpreter is required.
 - No network calls; only `git` and the local interpreters.
 

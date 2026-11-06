@@ -29,9 +29,10 @@ const HELP = `SignOff / 一诺过五关 — make "done" provable
   signoff all                                p1, p2, p5, then p4 verify
   signoff doctor                             show what is present in this repo
 
-  signoff init [--no-ci]                     install hooks + CI so the gates run themselves
+  signoff init [--no-ci] [--prepare] [--quiet]  install hooks + CI so the gates run themselves
   signoff guard [--full]                     run the gate set the hooks use (right now)
   signoff status                             is this repo guarded?
+  signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
   signoff uninstall [--all]                  remove hooks + CI workflow
 
 Requires Node >= 18 only; no Python. Options common to every gate: --json, -h.
@@ -123,7 +124,7 @@ function doctor() {
   if (g.status === 0 && g.stdout) {
     try {
       const parsed = JSON.parse(g.stdout);
-      const on = ["pre-commit", "pre-push", "ci"].filter((k) => parsed.installed[k]);
+      const on = ["pre-commit", "commit-msg", "pre-push", "ci"].filter((k) => parsed.installed[k]);
       if (on.length) guardLine = `${on.join(", ")} (${parsed.version})`;
     } catch (e) {
       /* keep default */
@@ -146,6 +147,14 @@ if (cmd === "guard") process.exit(guard("guard", rest));
 if (cmd === "hook") process.exit(guard("hook", rest));
 if (cmd === "status") process.exit(guard("status", rest));
 if (cmd === "uninstall") process.exit(guard("uninstall", rest));
+if (cmd === "audit") {
+  try {
+    process.exit(require(path.join(__dirname, "..", "lib", "audit.js")).run(rest) || 0);
+  } catch (e) {
+    console.error(`signoff: audit failed: ${e && e.message}`);
+    process.exit(1);
+  }
+}
 if (GATES[cmd]) process.exit(runGate(cmd, rest));
 
 console.error(`signoff: unknown command "${cmd}"\n`);

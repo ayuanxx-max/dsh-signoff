@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.1.0 — 2026-11-06
+
+- 新增 `commit-msg` 钩子与提交标记：闸门通过后在提交信息里写 `Signoff-Pass: <tree>`，`SIGNOFF_SKIP=1` 时写 `Signoff-Skip:`——`git commit --no-verify` 从此不再是“无记录”，而是“没有标记的提交”。
+- 新增 `signoff audit [--range A..B] [--json] [--strict]`：逐个提交核对标记与提交树是否一致；缺失判红，`--strict` 时“有记录的跳过”也判红；合并提交跳过并计数。生成的 CI 工作流自带这一步。
+- `signoff init` 升级：安装第三个钩子、新增 `--quiet` 与 `--prepare`（把 `signoff init --quiet` 并入 `package.json` 的 `prepare`，队友 `npm install` 后自动装钩子，幂等）；`status` 显示 `commit-msg` 与 `trailer` 状态。
+- 自查 81 项（原 30 项 + 标记/审计/prepare/真实提交用例），Python 对拍仍 30/30。
+
 ## 3.0.0 — 2026-11-06
 
 - 五关与自动守护全部改为纯 Node 实现（`lib/p1..p5.js`、`lib/guard.js`），**不再需要 Python**：`npm i -g dsh-signoff` 之后任何有 Node 18+ 的机器都能跑完整 P1–P5，没有降级模式、没有缺失的关。
