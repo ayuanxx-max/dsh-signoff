@@ -1,7 +1,7 @@
 {
   "name": "dsh-signoff",
-  "version": "3.2.0",
-  "description": "SignOff (执印) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
+  "version": "3.2.1",
+  "description": "SignOff (落印) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
   "license": "MIT",
   "bin": {
     "signoff": "bin/signoff.js"
