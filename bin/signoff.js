@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-// SignOff (一诺过五关) CLI — dispatches to the five gates.
+// SignOff (落印) CLI — dispatches to the five gates.
 // The gates are pure Node (lib/p1..p5.js). SIGNOFF_ENGINE=python falls back to
 // the reference implementation in gates/*.py, which is used only for parity tests.
 
@@ -17,7 +17,7 @@ const GATES = {
   p5: "p5_slop.py",
 };
 
-const HELP = `SignOff / 一诺过五关 — make "done" provable
+const HELP = `SignOff / 落印 — make "done" provable
 
   signoff p1 [--run CMD]... [--budget SEC]   gate 1  verify before you speak
   signoff p2 [--min-scenario N] [--md FILE]  gate 2  coverage has a level, not a vibe
@@ -109,6 +109,10 @@ const [cmd, ...rest] = process.argv.slice(2);
 
 if (!cmd || cmd === "-h" || cmd === "--help" || cmd === "help") {
   console.log(HELP);
+  process.exit(0);
+}
+if (cmd === "-v" || cmd === "--version" || cmd === "version") {
+  console.log(require("../package.json").version);
   process.exit(0);
 }
 if (cmd === "doctor") process.exit(require("../lib/doctor").run(rest));
