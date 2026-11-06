@@ -74,3 +74,5 @@
 
 缓存文件 `.signoff/cache.json` 以 `git write-tree` 的结果为键：同一份暂存内容重复提交只判一次。
 `SIGNOFF_SKIP=1` 跳过并写 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身口子，无记录，因此 CI 是不可绕过的边界。
+
+> 自检记录（2026-11-06）：装好 `signoff init` 后，本条修正在 `pre-commit` 里跑过 P1（30 用例）与 P5（3 份文档 0 命中）。
