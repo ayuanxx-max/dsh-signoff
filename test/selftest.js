@@ -176,6 +176,9 @@ function main() {
 
     fs.writeFileSync(path.join(repo, "docs", "clean.md"), "# clean\n\n40 cases in 3.6 s, 12/12 PASS.\nsecond\n", "utf8");
     git(["add", "-A"], repo);
+    r = g(["hook", "pre-push"]);
+    check("guard pre-push pass", r.status, 0);
+    check("pre-push leaves no marker", fs.existsSync(path.join(repo, ".signoff", "passed")) ? 0 : 1, 1);
     r = g(["hook", "pre-commit"]);
     check("guard hook pass", r.status, 0);
     const markerAfterPass = JSON.parse(fs.readFileSync(path.join(repo, ".signoff", "passed"), "utf8"));

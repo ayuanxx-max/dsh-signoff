@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.2 — 2026-11-06
+
+- `pre-push` 不再写 `.signoff/passed`：标记是 `pre-commit` 交给 `commit-msg` 的一次性凭据，push 时留下会让仓库里多一个与提交无关的残片。
+- 自查补 1 项（pre-push 不留标记），共 91 项全绿。
+
 ## 3.1.1 — 2026-11-06
 
 - 提交标记改为严格一次性：`commit-msg` 无论标记是否匹配当前树都会消费掉它，`pre-commit` 写新标记前先清旧的。原来“树变了”的标记会留在 `.signoff/passed`，下一次同树提交可能重复追加 trailer。
