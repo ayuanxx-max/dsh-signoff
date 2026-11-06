@@ -18,7 +18,7 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | P4 账本 | `signoff p4 ask\|confirm\|verify\|export` | 危险动作有没有票、回滚点是否还在 |
 | P5 反空话 | `signoff p5` | 文档里有没有空话、`绝对`化断言、无数字的`已验证` |
 
-## 一、本次修复（dsh-session-fork-tree 0.9.34）里，五关各自做了什么
+## 一、案例：本次 DSH 2.0.22-next升级后在修复（dsh-session-fork-tree 0.9.34）bug里，五关各自做了什么？
 
 这次修的是“升级 DSH 后，点侧栏「···」菜单，菜单闪一下就消失”。五关实际起了什么作用，逐条列出，包括没发挥作用的那一关。
 
@@ -103,7 +103,7 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 | P4 ledger | `signoff p4 ask\|confirm\|verify\|export` | Did the risky action hold a ticket, is the rollback point still there |
 | P5 anti-slop | `signoff p5` | Empty words, absolute claims, "verified" with no number |
 
-### What the gates did in the 0.9.34 fix (dsh-session-fork-tree)
+### Case: what the five gates did in the 0.9.34 bug fix after the DSH 2.0.22-next upgrade
 
 | Gate | Action in this fix | Evidence | Verdict |
 | --- | --- | --- | --- |
