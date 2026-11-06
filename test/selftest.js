@@ -315,7 +315,7 @@ function main() {
     fs.writeFileSync(path.join(urepo, "a.txt"), "a", "utf8");
     gitOut(["add", "."], urepo);
     gitOut(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "a"], urepo);
-    const u = (args) => run(args, urepo, { SIGNOFF_HOME: uhome });
+    const u = (args, extra) => run(args, urepo, Object.assign({ SIGNOFF_HOME: uhome }, extra || {}));
     u(["init", "--no-ci", "--quiet"]);
     fs.writeFileSync(path.join(urepo, ".signoff", "passed"), '{"tree":"x"}', "utf8");
     r = u(["uninstall", "--keep-config"]);
@@ -325,6 +325,20 @@ function main() {
     u(["init", "--no-ci", "--quiet"]);
     r = u(["uninstall", "--all"]);
     check("uninstall --all drops the config", fs.existsSync(path.join(urepo, ".signoff", "config.json")) ? 0 : 1, 1);
+
+    // one hook run at a time: a live lock refuses, a stale one is broken
+    u(["init", "--no-ci", "--quiet"]);
+    const lk = path.join(urepo, ".signoff", "lock");
+    fs.writeFileSync(lk, JSON.stringify({ pid: process.pid, stage: "pre-commit", ts: new Date().toISOString() }), "utf8");
+    fs.writeFileSync(path.join(urepo, "z.txt"), "z", "utf8");
+    gitOut(["add", "."], urepo);
+    r = u(["hook", "pre-commit"], { SIGNOFF_LOCK_WAIT_MS: "0" });
+    check("live lock refuses the run", r.status, 1, (r.stderr || "").trim());
+    check("live lock names the holder", /holds the lock/.test(r.stderr) ? 1 : 0, 1);
+    fs.writeFileSync(lk, JSON.stringify({ pid: 999999, stage: "pre-commit", ts: new Date(Date.now() - 3600e3).toISOString() }), "utf8");
+    r = u(["hook", "pre-commit"], { SIGNOFF_LOCK_WAIT_MS: "0" });
+    check("stale lock is broken", r.status === 0 ? 1 : 0, 1, (r.stdout || "").trim());
+    check("lock released after the run", fs.existsSync(lk) ? 0 : 1, 1);
 
     // p4 export --merge: another repo's ledger joins the table, tampering is reported
     const lrepo = path.join(base, "ledger-repo");

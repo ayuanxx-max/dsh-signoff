@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.8.0 — 2026-11-06
+
+- 新增 `docs/gates.en.md`：与 `docs/gates.md` 一一对应的英文版（五关参数、P1 识别顺序、P4 `--merge`、钩子锁、运行时），两份互加链接；顺手修掉 gates.md 标题里的旧名「执印」。
+- 新增钩子单实例锁 `.signoff/lock`：同一个仓库并发提交时，第二个 `pre-commit` / `pre-push` 退 1 并报出持有者 pid、阶段、时间；持有进程已死或锁超过 10 分钟自动作废；`SIGNOFF_LOCK_WAIT_MS` 可调等待（默认 8000 ms）。`commit-msg` 不加锁，它不能把 git 已接受的提交再挡回去。
+- 自查 147 项、Python 对等 30 项全过。
+
 ## 3.7.0 — 2026-11-06
 
 - 新增 `lib/detect.js`：P1 的测试命令改成“识别 + 说明来源”，顺序为 `package.json` 的 `test` 脚本 → vitest / jest / mocha 依赖 → `Cargo.toml` → `go.mod` → `Makefile` 的 `test` 目标 → pytest → unittest。`init` / `status` 打印 `<命令>  (<来源>)`，`doctor` 多一条 `test-runner` 检查。

@@ -137,6 +137,7 @@ signoff p5 docs README.md
 - **测试命令是“查出来的”，不是“猜出来的”**：按 `package.json` 的 `test` 脚本 → vitest/jest/mocha 依赖 → `Cargo.toml` → `go.mod` → `Makefile` 的 `test` → pytest → unittest 的顺序识别；`signoff init` / `status` / `doctor` 都会写出用的是哪一条、从哪认出来的。`tests/` 是空目录不算测试，不会让 p1 空跑一场报“没收集到用例”。
 - **原有钩子不会被悄悄顶掉**：`signoff init` 默认把现有钩子备份成 `<name>.signoff-backup`（不串接）；加 `--chain` 则存成 `<name>.local` 并在我们的钩子里先执行——它失败就停，`signoff uninstall` 会把它原样装回 `<name>`。
 - **账本可以跨仓库合并**：`signoff p4 export --merge <另一个仓库的 audit.log>` 会逐文件重算哈希链，链断了的那份会被标出来并以 1 退出——合并视图不会替坏链背书。
+- **同一仓库同时只跑一次钩子**：`.signoff/lock` 是单实例锁，第二个提交会拿到“谁在占用”并退 1；锁的持有进程已死或超过 10 分钟自动作废。`commit-msg` 不参与加锁——它不能把已经接受的提交再挡回去。
 - **`doctor` 只读**：它从不安装、不改写、不删除，只把 `status` / `audit` / `p4 verify` 的结论摊开并给出修法；`ok` 判 0，有 `fail` 判 1，不在仓库里判 2。
 - **装钩子之前的历史不算账**：`signoff init` 把当时的提交记进 `.signoff/installed.json`，`signoff audit --since-install` 从那里起算；普通 `audit` 遇到装钩子之前的缺失提交，会多打一行 `N of M missing commit(s) predate the install point`，不用自己算范围。
 - **钩子可绕过，但会留下证据**：`git commit --no-verify` 不触发钩子，提交里就没有 `Signoff-Pass` 标记，`signoff audit`（CI 自动跑）判红；`SIGNOFF_SKIP=1` 写 `Signoff-Skip` 并记进 `.signoff/skips.log`，`--strict` 下判红。

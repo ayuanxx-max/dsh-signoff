@@ -1,4 +1,6 @@
-# Gates — SignOff / 执印
+# Gates — SignOff / 落印
+
+> English: [gates.en.md](gates.en.md)
 
 每关一条命令，结果写 `.signoff/pN.json`，退出码 0 通过、1 失败、2 用法或前置条件问题。
 
