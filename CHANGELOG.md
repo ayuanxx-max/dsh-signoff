@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.0 — 2026-11-06
+
+- 五关与自动守护全部改为纯 Node 实现（`lib/p1..p5.js`、`lib/guard.js`），**不再需要 Python**：`npm i -g dsh-signoff` 之后任何有 Node 18+ 的机器都能跑完整 P1–P5，没有降级模式、没有缺失的关。
+- 与 Python 参考实现逐字节对拍：P1 43 例、P2 126 例、P3、P4 29 例（含真账本 7 条与混合引擎链）、P5 26 例；`npm test` 跑 Node 版 30 项自查，`npm run parity` 保留 Python 对拍。
+- 自动守护同步改为 Node：钩子仍调 `signoff hook <stage>`，内部用 `node bin/signoff.js` 跑闸门；测试命令优先取 `package.json` 的 test，只在解释器可用时才探测 pytest。
+- 修 Windows 上 `windowsHide` 导致 `cmd.exe` 输出 GBK 乱码、与 Python 不一致的问题。
+
 ## 2.0.2 — 2026-11-06
 
 - CI 模式（`signoff guard --ci`）不再只看暂存区：改为对 `.signoff/config.json` 里声明的全部文档跑 P5，再跑 P1 与（有场景 fixture 时的）P2、P4。钩子模式仍只看本次暂存改动。

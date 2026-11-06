@@ -46,6 +46,8 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | `.signoff/config.json` | 测试命令、预算、文档目录；`signoff status` 随时查看 |
 | `.gitignore` | 追加 `.signoff/`，结果不进版本库 |
 
+只依赖 **Node 18+**：闸门本身是 Node 实现（`lib/p*.js`），没有 Python 也能跑完整五关，不存在降级模式。
+
 三条稳定性措施：**同一份暂存内容只判一次**（命中缓存约 0 ms，反复 `git commit --amend` 不重复付时间）；**失败只打印失败那一关的尾部**（完整日志在 `.signoff/hook.log`）；**超预算直接判红**（默认 180 秒，`--budget` 可改）。
 
 要跳过只有两条路：`SIGNOFF_SKIP=1 git commit …` 会写进 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身的口子、没有记录——所以真正的边界在 CI 那条。
@@ -120,7 +122,7 @@ signoff p5 docs README.md
 - **P5 是启发式**：词表可以按团队改（`--allow <rule>` 放行某条），它拦住的是“明显没数字的断言”，不是全部坏文档。
 - **钩子按仓库各装一次**：`signoff init` 写在本机 `.git/hooks/`，别人 clone 不会自动有；CI 那条才是全员生效。
 - **钩子可绕过**：`git commit --no-verify` 不触发；`SIGNOFF_SKIP=1` 会记进 `.signoff/skips.log`。
-- **钩子需要本机有 python3**：闸门是 Python 脚本；找不到解释器时钩子判红并提示，不会静默放过。
+- **只需要 Node 18+**：闸门与钩子都是 Node；没有 Python、没有其它解释器也能跑完整五关。
 - **不联网**：除 `git` 与本地解释器外不调用外部服务。
 
 ## English
@@ -162,6 +164,8 @@ One line: **P2 decides whether it is fixed, P5 decides whether I am overclaiming
 | `.github/workflows/signoff.yml` | Every push / PR runs `npx dsh-signoff guard --ci`; not bypassable |
 | `.signoff/config.json` | Test command, budget, doc roots; `signoff status` shows all of it |
 | `.gitignore` | `.signoff/` is appended, so results stay out of the repo |
+
+Requires **Node 18+ only**: the gates are pure Node (`lib/p*.js`), so no Python is needed and there is no degraded mode.
 
 Three stability measures: the same staged tree is judged once (cache hit ~0 ms, so `git commit --amend` costs nothing); a failure prints only the tail of the failing gate (full log in `.signoff/hook.log`); exceeding the budget (default 180 s) is a red gate, not a silent twenty-minute hook.
 
@@ -215,7 +219,7 @@ signoff p5 docs README.md
 - P5 is heuristic; tune the word list with `--allow <rule>`.
 - Hooks are installed per clone; a fresh clone needs `signoff init` again, while CI covers everyone.
 - Hooks are bypassable: `git commit --no-verify` skips them silently, `SIGNOFF_SKIP=1` is recorded.
-- Hooks need a local python3; without one the hook fails closed and says so.
+- Needs Node 18+ only; no Python and no other interpreter is required.
 - No network calls; only `git` and the local interpreters.
 
 ## License

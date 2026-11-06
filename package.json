@@ -1,6 +1,6 @@
 {
   "name": "dsh-signoff",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "SignOff (一诺过五关) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
   "license": "MIT",
   "bin": {
@@ -8,6 +8,7 @@
   },
   "files": [
     "bin/",
+    "lib/",
     "gates/",
     "docs/",
     "test/",
@@ -30,7 +31,8 @@
     "agent"
   ],
   "scripts": {
-    "test": "python test/selftest.py"
+    "test": "node test/selftest.js",
+    "parity": "python test/selftest.py"
   },
   "repository": {
     "type": "git",
