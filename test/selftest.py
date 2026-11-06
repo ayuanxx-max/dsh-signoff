@@ -122,6 +122,59 @@ def main() -> int:
         check("p5 dirty red", r.returncode, 1, r.stdout.strip().splitlines()[-1])
         r = gate("p5_slop.py", "docs/clean.md", cwd=repo, home=home)
         check("p5 clean green", r.returncode, 0, r.stdout.strip().splitlines()[-1])
+
+        # Guard - install once, then the gates run themselves.
+        ghome = base / "guard-home"  # its own ledger: p4 stays out of this section
+
+        def guard(*a, extra=None):
+            env = dict(os.environ)
+            env["SIGNOFF_HOME"] = str(ghome)
+            env.pop("SIGNOFF_SKIP", None)
+            if extra:
+                env.update(extra)
+            return subprocess.run(
+                [sys.executable, str(GATES / "guard.py"), *a],
+                cwd=str(repo),
+                capture_output=True,
+                text=True,
+                errors="replace",
+                env=env,
+            )
+
+        r = guard("init", "--no-ci")
+        check("guard init", r.returncode, 0, r.stdout.strip().splitlines()[0] if r.stdout.strip() else "")
+        hooks = repo / ".git" / "hooks"
+        check("guard pre-commit hook", 1 if (hooks / "pre-commit").exists() else 0, 1)
+        check("guard pre-push hook", 1 if (hooks / "pre-push").exists() else 0, 1)
+        check("guard config", 1 if (repo / ".signoff" / "config.json").exists() else 0, 1)
+        check("guard gitignore", 1 if ".signoff/" in (repo / ".gitignore").read_text(encoding="utf-8") else 0, 1)
+        r = guard("status", "--json")
+        check("guard status", 1 if json.loads(r.stdout)["installed"]["pre-commit"] else 0, 1)
+
+        (repo / "docs" / "clean.md").write_text(
+            "# clean\n\n40 cases in 3.6 s, 12/12 PASS.\nsecond line\n", encoding="utf-8"
+        )
+        subprocess.run(["git", "add", "-A"], cwd=str(repo), check=True)
+        r = guard("hook", "pre-commit")
+        check("guard hook pass", r.returncode, 0, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else "")
+        r = guard("hook", "pre-commit")
+        check("guard cache hit", 1 if "cached" in r.stdout else 0, 1)
+
+        (repo / "docs" / "dirty.md").write_text(
+            "# dirty\n\n这个方案赋能全链路，闭环彻底解决，已验证。\nagain\n", encoding="utf-8"
+        )
+        subprocess.run(["git", "add", "-A"], cwd=str(repo), check=True)
+        r = guard("hook", "pre-commit")
+        check("guard hook fail closed", r.returncode, 1, "")
+
+        r = guard("hook", "pre-commit", extra={"SIGNOFF_SKIP": "1"})
+        check("guard skip allowed", r.returncode, 0, r.stdout.strip())
+        check("guard skip recorded", 1 if (repo / ".signoff" / "skips.log").exists() else 0, 1)
+
+        r = guard("uninstall")
+        check("guard uninstall", 1 if not (hooks / "pre-commit").exists() else 0, 1)
+        r = guard("init", "--dry-run", "--no-ci")
+        check("guard dry-run writes nothing", 1 if not (hooks / "pre-commit").exists() else 0, 1)
     finally:
         shutil.rmtree(base, ignore_errors=True)
 

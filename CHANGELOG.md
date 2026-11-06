@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 — 2026-11-06
+
+- 新增自动守护：`signoff init` 一次安装，写入 `.git/hooks/pre-commit`、`.git/hooks/pre-push`、`.github/workflows/signoff.yml`、`.signoff/config.json`，并把 `.signoff/` 加进 `.gitignore`。
+- 新增 `signoff guard`（钩子与 CI 实际调用的入口）、`signoff status`、`signoff uninstall`；`signoff doctor` 增加 guard 一行。
+- 稳定性：同一暂存树只判一次（缓存命中约 0 ms）；失败只打印失败关的尾部，完整日志在 `.signoff/hook.log`；超预算判红；CLI 缺失判红；`SIGNOFF_SKIP=1` 跳过并记入 `.signoff/skips.log`。
+- 自查 30/30（原 17 项 + 13 项 guard 用例：安装、缓存、失败阻断、跳过留痕、卸载、dry-run）。
+- 只新增能力，五关的判定逻辑未变。
+
 ## 1.0.4 — 2026-11-06
 
 - 承诺句改为与 P1–P5 实际边界一致的表述：「你照常干活；它不替你判断对错，只把“做完了”变成能核对的东西。」中英同步。

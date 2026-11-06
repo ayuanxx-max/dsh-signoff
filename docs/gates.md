@@ -60,3 +60,17 @@
 六条规则：`placeholder`（未完成的占位标记：`TODO`、`TBD`、`FIXME`、`待补`、`待定`）、`ai-word`（`赋能`/`闭环`/`抓手`/`颗粒度`/`全链路`…）、`absolute-claim`（`100%`/`零缺陷`/`永不`/`绝对`/`完美`/`彻底`/`极致`/`无缝`）、`empty-adverbs`（一行两个及以上空副词）、`claim-without-number`（`已验证`/`已覆盖`/`全部通过`/`全绿` 所在行没有数字）、缺回滚（仅 P4 使用）。
 
 跳过 fenced code 与以 `|` 开头的表格行，避免把示例当空话。`--allow <rule>` 可放行某条规则。
+
+## 自动守护（2.0.0）
+
+`signoff init` 之后，`pre-commit` / `pre-push` / CI 都会调 `signoff guard`：
+
+| 场景 | 实际跑的关 |
+| --- | --- |
+| 暂存的文档（README、docs/ 下） | P5 |
+| 能探到测试命令（package.json 的 test，或 pytest） | P1 |
+| 存在 `verify/scenarios/` | P2 `--strict` |
+| 存在账本（`SIGNOFF_HOME` 或 `~/.signoff/audit.log`） | P4 `verify` |
+
+缓存文件 `.signoff/cache.json` 以 `git write-tree` 的结果为键：同一份暂存内容重复提交只判一次。
+`SIGNOFF_SKIP=1` 跳过并写 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身口子，无记录，因此 CI 是不可绕过的边界。

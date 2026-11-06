@@ -32,9 +32,32 @@ signoff all               # p1 + p2 + p5 + p4 verify
 
 一句话：**P2 决定“修好没有”，P5 决定“我有没有说大话”，P1 只证明没弄坏别处，P4 事后抓住了我自己的一笔脏账，P3 全程没上场。** 这个结论本身就是 SignOff 想要的输出：每一关都要能回答“发挥了没有”，不能只说“流程走过了”。
 
-<h2 style="color:#c00000">你照常干活；它不替你判断对错，只把“做完了”变成能核对的东西。</h2>
+<h2 style="color:#c00000">你不需要做什么，照常进行任务，由它来守护这个过程；</h2>
 
-## 二、在其它代码过程里能干什么
+## 二、自动守护：装一次，之后不用记
+
+`signoff init` 把五关接进 git 与 CI，一次安装，之后正常 `git commit` / `git push` / 开 PR 都由它先查：
+
+| 安装物 | 作用 |
+| --- | --- |
+| `.git/hooks/pre-commit` | 暂存区一变就跑闸门：文档改动 → P5；能探到测试命令 → P1；有 `verify/scenarios/` → P2 `--strict`；有账本 → P4 `verify`。红了直接拒绝提交 |
+| `.git/hooks/pre-push` | push 前跑同一套（`--full`，不吃缓存） |
+| `.github/workflows/signoff.yml` | 每个 push / PR 跑 `npx dsh-signoff guard --ci`，绕不过去 |
+| `.signoff/config.json` | 测试命令、预算、文档目录；`signoff status` 随时查看 |
+| `.gitignore` | 追加 `.signoff/`，结果不进版本库 |
+
+三条稳定性措施：**同一份暂存内容只判一次**（命中缓存约 0 ms，反复 `git commit --amend` 不重复付时间）；**失败只打印失败那一关的尾部**（完整日志在 `.signoff/hook.log`）；**超预算直接判红**（默认 180 秒，`--budget` 可改）。
+
+要跳过只有两条路：`SIGNOFF_SKIP=1 git commit …` 会写进 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身的口子、没有记录——所以真正的边界在 CI 那条。
+
+```bash
+signoff init                 # 装钩子 + CI + 配置
+signoff status               # 这个仓库现在守不守？
+signoff guard --full         # 手动跑同一套（钩子调的就是它）
+signoff uninstall --all      # 卸掉
+```
+
+## 三、在其它代码过程里能干什么
 
 | 场景 | 五关怎么用 |
 | --- | --- |
@@ -46,7 +69,7 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | 交接与复盘 | P2 的覆盖表 + P4 `export` 出的账本，接手的人先看这两张表，再看代码 |
 | 合规留痕 | P4 哈希链：改过的记录会被 `verify` 判为 `content hash mismatch`，事后补账能被发现 |
 
-## 三、在 DSH 任务里能干什么
+## 四、在 DSH 任务里能干什么
 
 - **发 npm / 改 profile / 改 cordis 配置**：P4 先 `ask` 取票（单次、10 分钟过期、绑定动作类别），再 `confirm` 落账，账里带回滚点；回滚点必须是真的 git ref，写一句“npm deprecate …”会被 `verify` 拒绝。
 - **插件发版**：P1 跑三套真实 DOM fixture，P2 把结果记进覆盖率表，P5 保证发布说明里没有`绝对`化的收尾句。
@@ -55,9 +78,15 @@ signoff all               # p1 + p2 + p5 + p4 verify
 - **收尾**：P5 的六条规则让“完成”这句话可以被机器反驳：无数字的`已验证`、`TODO`、`绝对`化断言、AI 味词表（`赋能` / `闭环` / `抓手`…），命中即失败。
 - **插件回归**：`verify/scenarios/*.json` 是 P2 的输入格式，把 fixture 的 checks 数量直接变成覆盖率数字，不需要另写报表。
 
-## 四、命令速查
+## 五、命令速查
 
 ```bash
+# 自动守护：装一次，之后不用记
+signoff init
+signoff status
+signoff guard --full
+signoff uninstall --all
+
 # P1：跑检查；默认 tests/ 用 pytest，否则 npm test
 signoff p1 --run "pytest -q" --run "npm run lint" --budget 120
 signoff p1 --install-hook            # 写入 .git/hooks/pre-commit
@@ -82,13 +111,16 @@ signoff p5 docs README.md
 
 每关都会把结果写到 `.signoff/pN.json`（P4 的账本在 `~/.signoff/audit.log`，可用 `SIGNOFF_HOME` 改位置），便于 CI 存档与二次核对。
 
-## 五、边界（先说清不做什么）
+## 六、边界（先说清不做什么）
 
 - **只读不改**：五关不改你的代码，只在 `.signoff/` 与 `~/.signoff/` 写结果。
 - **P1 只看退出码**：不做交互、不猜意图；命令怎么写由你给。
 - **P2 不生成断言**：断言要人写；它只负责数、分级、拦住“没到 scenario 级”的降级。
 - **P4 是本机哈希链**，不是外部公证：能发现事后改账，不能防有人连链一起重写。要更强证据得接外部时间戳。
 - **P5 是启发式**：词表可以按团队改（`--allow <rule>` 放行某条），它拦住的是“明显没数字的断言”，不是全部坏文档。
+- **钩子按仓库各装一次**：`signoff init` 写在本机 `.git/hooks/`，别人 clone 不会自动有；CI 那条才是全员生效。
+- **钩子可绕过**：`git commit --no-verify` 不触发；`SIGNOFF_SKIP=1` 会记进 `.signoff/skips.log`。
+- **钩子需要本机有 python3**：闸门是 Python 脚本；找不到解释器时钩子判红并提示，不会静默放过。
 - **不联网**：除 `git` 与本地解释器外不调用外部服务。
 
 ## English
@@ -117,7 +149,23 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 
 One line: **P2 decides whether it is fixed, P5 decides whether I am overclaiming, P1 only proves nothing else broke, P4 caught my own dirty entry after the fact, P3 never left the bench.**
 
-<h2 style="color:#c00000">Carry on with your work; it does not judge right or wrong for you — it only turns “done” into something you can check.</h2>
+<h2 style="color:#c00000">You do not have to do anything differently — just carry on with your task, and it guards the process.</h2>
+
+### Auto-guard: install once, then it runs itself
+
+`signoff init` wires the gates into git and CI, so an ordinary `git commit`, `git push` or pull request is checked first:
+
+| Installed | What it does |
+| --- | --- |
+| `.git/hooks/pre-commit` | On a change to the index: docs → P5; detectable test command → P1; `verify/scenarios/` → P2 `--strict`; existing ledger → P4 `verify`. A red gate refuses the commit |
+| `.git/hooks/pre-push` | The same set before a push, `--full`, no cache |
+| `.github/workflows/signoff.yml` | Every push / PR runs `npx dsh-signoff guard --ci`; not bypassable |
+| `.signoff/config.json` | Test command, budget, doc roots; `signoff status` shows all of it |
+| `.gitignore` | `.signoff/` is appended, so results stay out of the repo |
+
+Three stability measures: the same staged tree is judged once (cache hit ~0 ms, so `git commit --amend` costs nothing); a failure prints only the tail of the failing gate (full log in `.signoff/hook.log`); exceeding the budget (default 180 s) is a red gate, not a silent twenty-minute hook.
+
+Two ways past: `SIGNOFF_SKIP=1 git commit …` is recorded in `.signoff/skips.log`; `git commit --no-verify` is git's own hole and leaves no trace - which is why CI is the real boundary.
 
 ### Beyond this fix: other code work
 
@@ -140,6 +188,12 @@ One line: **P2 decides whether it is fixed, P5 decides whether I am overclaiming
 ### Usage
 
 ```bash
+# auto-guard: install once
+signoff init
+signoff status
+signoff guard --full
+signoff uninstall --all
+
 signoff p1 --run "pytest -q" --budget 120
 signoff p1 --install-hook
 signoff p2 --strict --min-scenario 4 --min-assertions 60 --md docs/coverage.md
@@ -159,6 +213,9 @@ signoff p5 docs README.md
 - P2 counts and grades; it does not write assertions for you.
 - P4 is a local hash chain, not external notarisation: it detects edits after the fact, and cannot stop someone rewriting the whole chain.
 - P5 is heuristic; tune the word list with `--allow <rule>`.
+- Hooks are installed per clone; a fresh clone needs `signoff init` again, while CI covers everyone.
+- Hooks are bypassable: `git commit --no-verify` skips them silently, `SIGNOFF_SKIP=1` is recorded.
+- Hooks need a local python3; without one the hook fails closed and says so.
 - No network calls; only `git` and the local interpreters.
 
 ## License
