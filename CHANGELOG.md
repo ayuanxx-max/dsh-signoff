@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.4.0 — 2026-11-06
+
+- `signoff init` 记录安装点 `.signoff/installed.json`（`{sha, ts, version}`）；重复 init 不覆盖第一个安装点——装钩子之前的历史是历史，不是失败。
+- `signoff audit --since-install`：从安装点起算，不再手写 `--range`；没有安装点时直接报错退出 2，不猜。
+- 普通 `audit` 遇到装钩子之前的缺失提交会多打一行：`N of M missing commit(s) predate the install point (<sha12>); use --since-install`；`--json` 增加 `install: {sha, pre_install_missing}`。
+- 自查新增 5 项（安装点存在、带 sha、`--since-install` 空区间通过、重复 init 不改安装点、装钩子之前的缺失提交给出提示），共 103 项全过。
+
 ## 3.3.0 — 2026-11-06
 
 - **账本改为仓库级**：默认写 `<repo>/.signoff/audit.log`（非仓库目录退回 `~/.signoff/audit.log`，`SIGNOFF_HOME` 仍可强制指定）。原来的用户级账本会把 A 仓库的回滚点拿去 B 仓库校验，`p4 verify` 在除写入者之外的任何仓库都报 `missing`。

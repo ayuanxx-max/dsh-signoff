@@ -214,8 +214,30 @@ function main() {
           ...(env || {}),
         },
       });
+    r = g(["audit", "--since-install"]);
+    check("audit --since-install needs install point", r.status, 2);
     r = g(["init", "--no-ci"]);
     check("guard init", r.status, 0);
+    const ipath = path.join(repo, ".signoff", "installed.json");
+    check("init records install point", fs.existsSync(ipath) ? 1 : 0, 1);
+    const ip1 = JSON.parse(fs.readFileSync(ipath, "utf8"));
+    check("install point carries sha", /^[0-9a-f]{7,40}$/.test(ip1.sha || "") ? 1 : 0, 1, JSON.stringify(ip1));
+    check("audit --since-install ok", g(["audit", "--since-install"]).status, 0, g(["audit", "--since-install"]).stdout.trim());
+    r = g(["init", "--no-ci"]);
+    check("re-init keeps install point", fs.readFileSync(ipath, "utf8").trim() === JSON.stringify(ip1) ? 1 : 0, 1);
+    const hrepo = path.join(base, "hint-repo");
+    fs.mkdirSync(hrepo, { recursive: true });
+    gitOut(["init", "-q", "."], hrepo);
+    for (const n of ["a", "b", "c"]) {
+      fs.writeFileSync(path.join(hrepo, `${n}.txt`), n, "utf8");
+      gitOut(["add", "."], hrepo);
+      gitOut(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", n], hrepo);
+    }
+    run(["init", "--no-ci"], hrepo);
+    const hsha = JSON.parse(fs.readFileSync(path.join(hrepo, ".signoff", "installed.json"), "utf8")).sha;
+    const hinted = run(["audit", "--range", `${hsha}~2..HEAD`], hrepo);
+    check("audit hints pre-install commits", /predate the install point/.test(hinted.stdout) ? 1 : 0, 1, hinted.stdout.trim().replace(/\n/g, " | "));
+    check("audit --since-install in fresh repo", run(["audit", "--since-install"], hrepo).status, 0);
     const hooks = path.join(repo, ".git", "hooks");
     check("guard pre-commit hook", fs.existsSync(path.join(hooks, "pre-commit")) ? 1 : 0, 1);
     check("guard commit-msg hook", fs.existsSync(path.join(hooks, "commit-msg")) ? 1 : 0, 1);

@@ -63,8 +63,10 @@ signoff status               # 这个仓库现在守不守？
 signoff guard --full         # 手动跑同一套（钩子调的就是它）
 signoff uninstall --all
 signoff audit --range origin/main..HEAD   # did these commits really pass the gates?
+signoff audit --since-install             # only commits after `signoff init`
 signoff init --prepare       # also write it into package.json so npm install installs the hooks      # 卸掉
 signoff audit --range origin/main..HEAD   # 这些提交真过过闸门吗？
+signoff audit --since-install             # 只看装钩子之后的提交
 signoff init --prepare       # 同时写进 package.json，队友 install 即装
 ```
 
@@ -130,6 +132,7 @@ signoff p5 docs README.md
 - **P4 是本机哈希链**，不是外部公证：能发现事后改账，不能防有人连链一起重写。要更强证据得接外部时间戳。
 - **P5 是启发式**：词表可以按团队改（`--allow <rule>` 放行某条），它拦住的是“明显没数字的断言”，不是全部坏文档。
 - **钩子按仓库各装一次**：`signoff init` 写在本机 `.git/hooks/`，别人 clone 不会自动有；CI 那条才是全员生效。
+- **装钩子之前的历史不算账**：`signoff init` 把当时的提交记进 `.signoff/installed.json`，`signoff audit --since-install` 从那里起算；普通 `audit` 遇到装钩子之前的缺失提交，会多打一行 `N of M missing commit(s) predate the install point`，不用自己算范围。
 - **钩子可绕过，但会留下证据**：`git commit --no-verify` 不触发钩子，提交里就没有 `Signoff-Pass` 标记，`signoff audit`（CI 自动跑）判红；`SIGNOFF_SKIP=1` 写 `Signoff-Skip` 并记进 `.signoff/skips.log`，`--strict` 下判红。
 - **只需要 Node 18+**：闸门与钩子都是 Node；没有 Python、没有其它解释器也能跑完整五关。
 - **不联网**：除 `git` 与本地解释器外不调用外部服务。
