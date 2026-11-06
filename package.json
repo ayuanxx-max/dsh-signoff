@@ -1,0 +1,39 @@
+{
+  "name": "dsh-signoff",
+  "version": "1.0.0",
+  "description": "SignOff (一诺过五关) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
+  "license": "MIT",
+  "bin": {
+    "signoff": "bin/signoff.js"
+  },
+  "files": [
+    "bin/",
+    "gates/",
+    "docs/",
+    "test/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "dsh",
+    "signoff",
+    "gates",
+    "precommit",
+    "coverage",
+    "fanout",
+    "audit",
+    "anti-slop",
+    "agent"
+  ],
+  "scripts": {
+    "test": "python test/selftest.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ayuanxx-max/dsh-signoff.git"
+  }
+}

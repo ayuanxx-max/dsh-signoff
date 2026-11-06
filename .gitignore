@@ -1,0 +1,5 @@
+node_modules/
+.signoff/
+.signoff-home/
+*.tgz
+__pycache__/
