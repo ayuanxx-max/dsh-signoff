@@ -32,7 +32,7 @@ signoff all               # p1 + p2 + p5 + p4 verify
 
 一句话：**P2 决定“修好没有”，P5 决定“我有没有说大话”，P1 只证明没弄坏别处，P4 事后抓住了我自己的一笔脏账，P3 全程没上场。** 这个结论本身就是 SignOff 想要的输出：每一关都要能回答“发挥了没有”，不能只说“流程走过了”。
 
-**而你不需要做什么，照常进行任务，由它来守护这个过程；**
+<h2 style="color:#c00000">而你不需要做什么，照常进行任务，由它来守护这个过程；</h2>
 
 ## 二、在其它代码过程里能干什么
 
@@ -117,7 +117,7 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 
 One line: **P2 decides whether it is fixed, P5 decides whether I am overclaiming, P1 only proves nothing else broke, P4 caught my own dirty entry after the fact, P3 never left the bench.**
 
-**You do not have to do anything differently — just carry on with your task, and it guards the process.**
+<h2 style="color:#c00000">You do not have to do anything differently — just carry on with your task, and it guards the process.</h2>
 
 ### Beyond this fix: other code work
 
