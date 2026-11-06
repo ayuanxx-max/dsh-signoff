@@ -249,6 +249,20 @@ def ledger_path() -> Path:
     return (Path(home) / "audit.log") if home else (Path.home() / ".signoff" / "audit.log")
 
 
+def docs_files(root: Path, cfg: dict) -> list[str]:
+    out: list[str] = []
+    for d in cfg.get("docs") or []:
+        base = d.rstrip("/")
+        target = root / base
+        if target.is_file():
+            out.append(base)
+        elif target.is_dir():
+            out.extend(
+                str(p.relative_to(root)).replace("\\", "/") for p in sorted(target.rglob("*.md"))
+            )
+    return out
+
+
 def plan(root: Path, cfg: dict, files: list[str], full: bool) -> list[tuple[str, list[str]]]:
     steps: list[tuple[str, list[str]]] = []
     docs = staged_docs(files, cfg)
@@ -312,6 +326,11 @@ def cmd_guard(args) -> int:
         return 0
 
     steps = plan(root, cfg, files, full)
+    if args.ci:
+        # CI has no index: check every configured doc, not just the staged ones.
+        all_docs = docs_files(root, cfg)
+        if all_docs:
+            steps = [("p5", all_docs)] + [s for s in steps if s[0] != "p5"]
     if not steps:
         print("signoff guard: no gate applies to this change")
         return 0

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.2 — 2026-11-06
+
+- CI 模式（`signoff guard --ci`）不再只看暂存区：改为对 `.signoff/config.json` 里声明的全部文档跑 P5，再跑 P1 与（有场景 fixture 时的）P2、P4。钩子模式仍只看本次暂存改动。
+- 自查 30/30。
+
 ## 2.0.1 — 2026-11-06
 
 - 修复：`guard --full`（pre-push 用的就是它）此前会强制跑 P2 `--strict`，导致没有 `verify/scenarios/` 的仓库（例如本项目）在 push 时被误判为覆盖不足。现在 P2 只在仓库确实有场景 fixture（或配置里声明了 `apps`）时才参与。
