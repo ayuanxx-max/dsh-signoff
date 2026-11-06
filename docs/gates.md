@@ -76,3 +76,7 @@
 `SIGNOFF_SKIP=1` 跳过并写 `.signoff/skips.log`；`git commit --no-verify` 是 git 自身口子，无记录，因此 CI 是不可绕过的边界。
 
 > 自检记录（2026-11-06）：装好 `signoff init` 后，本条修正在 `pre-commit` 里跑过 P1（30 用例）与 P5（3 份文档 0 命中）。
+
+## 运行环境（3.0.0 起）
+
+五关与守卫都是 Node 实现（`lib/p1..p5.js`、`lib/guard.js`），只需要 Node 18+；不再依赖 Python，也没有降级模式。`gates/*.py` 仅作为对拍参考（`npm run parity`）。
