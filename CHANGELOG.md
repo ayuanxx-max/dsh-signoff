@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.1 — 2026-11-06
+
+- 修复：`guard --full`（pre-push 用的就是它）此前会强制跑 P2 `--strict`，导致没有 `verify/scenarios/` 的仓库（例如本项目）在 push 时被误判为覆盖不足。现在 P2 只在仓库确实有场景 fixture（或配置里声明了 `apps`）时才参与。
+- 自查 30/30，行为其余不变。
+
 ## 2.0.0 — 2026-11-06
 
 - 新增自动守护：`signoff init` 一次安装，写入 `.git/hooks/pre-commit`、`.git/hooks/pre-push`、`.github/workflows/signoff.yml`、`.signoff/config.json`，并把 `.signoff/` 加进 `.gitignore`。

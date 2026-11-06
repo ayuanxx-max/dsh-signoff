@@ -257,7 +257,9 @@ def plan(root: Path, cfg: dict, files: list[str], full: bool) -> list[tuple[str,
     cmd = detect_test(root, cfg)
     if cmd:
         steps.append(("p1", ["--run", cmd, "--budget", str(cfg.get("budget", 180))]))
-    if full or (root / "verify" / "scenarios").is_dir():
+    # P2 only joins when the repo actually has scenario fixtures; a repo without
+    # them is not "low coverage", it is simply not using this gate.
+    if (root / "verify" / "scenarios").is_dir() or cfg.get("apps"):
         steps.append(("p2", ["--strict"]))
     if ledger_path().exists():
         steps.append(("p4", ["verify"]))
