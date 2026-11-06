@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.5.1 — 2026-11-06
+
+- 修：重复 `signoff init` 时把 `.signoff/installed.json` 里的 `version` 更新成当前钩子版本（`sha`/`ts` 仍保留第一次安装点）。否则 `doctor` 每次升级后都会报一条永久的 `install-version` 警告——那正是 doctor 要避免的噪音。
+- 自查新增 1 项（重复 init 后版本跟随钩子），共 112 项全过。
 ## 3.5.0 — 2026-11-06
 
 - 新增 `signoff doctor [--json] [--quiet]`：回答“为什么它没按预期生效”，只读、不装不改不删。

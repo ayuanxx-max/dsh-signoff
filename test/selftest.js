@@ -224,7 +224,9 @@ function main() {
     check("install point carries sha", /^[0-9a-f]{7,40}$/.test(ip1.sha || "") ? 1 : 0, 1, JSON.stringify(ip1));
     check("audit --since-install ok", g(["audit", "--since-install"]).status, 0, g(["audit", "--since-install"]).stdout.trim());
     r = g(["init", "--no-ci"]);
-    check("re-init keeps install point", fs.readFileSync(ipath, "utf8").trim() === JSON.stringify(ip1) ? 1 : 0, 1);
+    const ip2 = JSON.parse(fs.readFileSync(ipath, "utf8"));
+    check("re-init keeps install point", `${ip2.sha}|${ip2.ts}` === `${ip1.sha}|${ip1.ts}` ? 1 : 0, 1);
+    check("re-init records the hook version", ip2.version, JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version);
     const hrepo = path.join(base, "hint-repo");
     fs.mkdirSync(hrepo, { recursive: true });
     gitOut(["init", "-q", "."], hrepo);
