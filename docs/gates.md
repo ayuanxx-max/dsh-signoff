@@ -53,7 +53,7 @@
 | `ask --action --target [--ttl]` | 发票据，单次使用，默认 600 秒过期 |
 | `confirm --ticket --decision allow\|deny [--detail] [--rollback]` | 消费票据并追加哈希链条目；`deny` 也记账，退出码 1 |
 | `verify` | 复算链（`prev` + 内容哈希），并校验回滚点是存在的 git ref；自由文本回滚点判失败 |
-| `export --out FILE` | 导出 Markdown 账本 |
+| `export --out FILE [--format {md,json,csv}]` | 导出账本；md 是表格，json 是记录数组，csv 是一行一条 |
 
 条目形如 `{"ts":...,"action":"publish","target":"x@1.0.0","detail":"...","rollback":"v1.0.0","decision":"allow","prev":"<sha256>","hash":"<sha256>"}`。
 

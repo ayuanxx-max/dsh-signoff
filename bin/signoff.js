@@ -24,16 +24,17 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff p3 [--cards DIR] plan|collect ...  gate 3  parallel work, no collisions
   signoff p4 ask|confirm|verify|export ...   gate 4  risky actions leave a ledger
   signoff p4 export --merge OTHER...        merge another repo's ledger into one table
+  signoff p4 export --format {md,json,csv}  pick the export shape
   signoff p5 [FILES...]                      gate 5  empty words are a failure
 
   signoff p1 --install-hook                  drop a git pre-commit hook
   signoff all                                p1, p2, p5, then p4 verify
-  signoff doctor                             show what is present in this repo
+  signoff doctor [--fix]                     show what is present; --fix repairs what it can prove
 
   signoff init [--no-ci] [--prepare] [--quiet]  install hooks + CI so the gates run themselves
   signoff guard [--full]                     run the gate set the hooks use (right now)
   signoff status                             is this repo guarded?
-signoff doctor [--json]                    why is (or isn't) it guarded? read-only self-check
+signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
   signoff uninstall [--keep-config] [--all]  remove hooks + CI workflow
 

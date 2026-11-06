@@ -67,7 +67,7 @@ Actions are limited to `config` / `profile` / `publish`. The ledger is scoped pe
 | `ask --action --target [--ttl]` | issue a single-use ticket, 600 s by default |
 | `confirm --ticket --decision allow\|deny [--detail] [--rollback]` | consume the ticket and append a hash-chained entry; `deny` is recorded too and exits 1 |
 | `verify` | recompute the chain (`prev` + content hash) and check that the rollback point is an existing git ref; free text fails |
-| `export --out FILE [--merge OTHER...]` | export Markdown; each `--merge` file is re-verified independently and a broken chain is reported with exit 1 |
+| `export --out FILE [--merge OTHER...] [--format {md,json,csv}]` | export the ledger; each `--merge` file is re-verified independently and a broken chain is reported with exit 1 |
 
 An entry looks like `{"ts":...,"action":"publish","target":"x@1.0.0","detail":"...","rollback":"v1.0.0","decision":"allow","prev":"<sha256>","hash":"<sha256>"}`.
 
@@ -89,6 +89,8 @@ After `signoff init`, `pre-commit` / `pre-push` / CI all call `signoff guard`:
 | a ledger (`.signoff/audit.log` or `~/.signoff/audit.log`) | P4 `verify` |
 
 `.signoff/cache.json` is keyed by `git write-tree`, so the same staged tree is judged once. `SIGNOFF_SKIP=1` skips and appends to `.signoff/skips.log`; `git commit --no-verify` is git's own hole and leaves no record, which is why CI is the boundary that cannot be bypassed.
+
+A chained (`--chain`) hook keeps its language: `.py`/`.js`/`.ps1`/`.cmd` suffixes pick the interpreter, and the plain `.local` name still runs first (3.9.0).
 
 Since 3.8.0 one hook run at a time holds `.signoff/lock`; a live holder makes the second run exit 1 with the holder's pid, and a lock from a dead pid or older than 10 minutes is broken.
 

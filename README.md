@@ -64,12 +64,14 @@ signoff init --chain         # 已有钩子保留：存为 <name>.local，先跑
 signoff init --prepare       # 同时写进 package.json，队友 npm install 即装钩子
 signoff status               # 这个仓库现在守不守？
 signoff doctor               # 为什么没按预期生效（只读）
+signoff doctor --fix         # 让它把能证明的修掉：重装缺失钩子、补执行位、清掉没暂存的标记
 signoff guard --full         # 手动跑同一套（钩子调的就是它）
 signoff audit --range origin/main..HEAD   # 这些提交真过过闸门吗？
 signoff audit --since-install             # 只看装钩子之后的提交
 signoff uninstall --all      # 卸掉钩子 + CI + 配置
 signoff uninstall --keep-config  # 卸掉钩子 + CI + 运行时状态，保留配置与账本
 signoff p4 export --merge ../other/.signoff/audit.log   # 多仓库合并成一张表
+signoff p4 export --format json --out ledger.json       # 也可以导出 json / csv
 ```
 
 ## 三、在其它代码过程里能干什么
@@ -135,7 +137,7 @@ signoff p5 docs README.md
 - **P5 是启发式**：词表可以按团队改（`--allow <rule>` 放行某条），它拦住的是“明显没数字的断言”，不是全部坏文档。
 - **钩子按仓库各装一次**：`signoff init` 写在本机 `.git/hooks/`，别人 clone 不会自动有；CI 那条才是全员生效。
 - **测试命令是“查出来的”，不是“猜出来的”**：按 `package.json` 的 `test` 脚本 → vitest/jest/mocha 依赖 → `Cargo.toml` → `go.mod` → `Makefile` 的 `test` → pytest → unittest 的顺序识别；`signoff init` / `status` / `doctor` 都会写出用的是哪一条、从哪认出来的。`tests/` 是空目录不算测试，不会让 p1 空跑一场报“没收集到用例”。
-- **原有钩子不会被悄悄顶掉**：`signoff init` 默认把现有钩子备份成 `<name>.signoff-backup`（不串接）；加 `--chain` 则存成 `<name>.local` 并在我们的钩子里先执行——它失败就停，`signoff uninstall` 会把它原样装回 `<name>`。
+- **原有钩子不会被悄悄顶掉**：`signoff init` 默认把现有钩子备份成 `<name>.signoff-backup`（不串接）；加 `--chain` 则存成 `<name>.local`（Python/Node/PowerShell 钩子保留 `.py`/`.js`/`.ps1` 后缀，按后缀选解释器）并在我们的钩子里先执行——它失败就停，`signoff uninstall` 会把它原样装回 `<name>`。
 - **账本可以跨仓库合并**：`signoff p4 export --merge <另一个仓库的 audit.log>` 会逐文件重算哈希链，链断了的那份会被标出来并以 1 退出——合并视图不会替坏链背书。
 - **同一仓库同时只跑一次钩子**：`.signoff/lock` 是单实例锁，第二个提交会拿到“谁在占用”并退 1；锁的持有进程已死或超过 10 分钟自动作废。`commit-msg` 不参与加锁——它不能把已经接受的提交再挡回去。
 - **`doctor` 只读**：它从不安装、不改写、不删除，只把 `status` / `audit` / `p4 verify` 的结论摊开并给出修法；`ok` 判 0，有 `fail` 判 1，不在仓库里判 2。

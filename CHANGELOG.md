@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.0 — 2026-11-06
+
+- 修 `--chain` 在 Windows 上跑不了非 shell 钩子：串接文件保留 `.py`/`.js`/`.ps1`/`.cmd` 后缀，生成的钩子按后缀用 `python`/`node`/`powershell`/`cmd` 启动，`.local` 仍排第一（3.9.0 之前装的仓库不受影响）；`uninstall` 按同一顺序找回并还原。
+- 新增 `signoff p4 export --format {md,json,csv}`（默认 md）：json 是记录数组，csv 是带表头的一行一条。
+- 新增 `signoff doctor --fix`：重装缺失或被占的钩子、给 POSIX 钩子补执行位、删掉“什么都没暂存却留着”的 `.signoff/passed`；修完重新体检再出报告，没有可修的会明说。
+- 自查 157 项、Python 对等 30 项全过。
+
 ## 3.8.0 — 2026-11-06
 
 - 新增 `docs/gates.en.md`：与 `docs/gates.md` 一一对应的英文版（五关参数、P1 识别顺序、P4 `--merge`、钩子锁、运行时），两份互加链接；顺手修掉 gates.md 标题里的旧名「执印」。
