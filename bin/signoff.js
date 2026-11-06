@@ -23,6 +23,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff p2 [--min-scenario N] [--md FILE]  gate 2  coverage has a level, not a vibe
   signoff p3 [--cards DIR] plan|collect ...  gate 3  parallel work, no collisions
   signoff p4 ask|confirm|verify|export ...   gate 4  risky actions leave a ledger
+  signoff p4 export --merge OTHER...        merge another repo's ledger into one table
   signoff p5 [FILES...]                      gate 5  empty words are a failure
 
   signoff p1 --install-hook                  drop a git pre-commit hook
@@ -34,7 +35,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff status                             is this repo guarded?
 signoff doctor [--json]                    why is (or isn't) it guarded? read-only self-check
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
-  signoff uninstall [--all]                  remove hooks + CI workflow
+  signoff uninstall [--keep-config] [--all]  remove hooks + CI workflow
 
 Requires Node >= 18 only; no Python. Options common to every gate: --json, -h.
 `;

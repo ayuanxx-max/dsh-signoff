@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.7.0 — 2026-11-06
+
+- 新增 `lib/detect.js`：P1 的测试命令改成“识别 + 说明来源”，顺序为 `package.json` 的 `test` 脚本 → vitest / jest / mocha 依赖 → `Cargo.toml` → `go.mod` → `Makefile` 的 `test` 目标 → pytest → unittest。`init` / `status` 打印 `<命令>  (<来源>)`，`doctor` 多一条 `test-runner` 检查。
+- 修：空 `tests/` 目录不再被当成测试套件（以前会让 p1 空跑一场、pytest 退 5 报“没收集到用例”）。目录里没有 `.py` 文件就不算。
+- 新增 `signoff p4 export --merge OTHER...`：把别的仓库的 `audit.log` 合并成一张带 `repo` 列的表；每份都独立重算哈希链，链断的会警告并以 1 退出。
+- 新增 `signoff uninstall --keep-config`：卸钩子 + CI，并清掉 `passed` / `cache.json` / `installed.json` 这些运行时状态，保留配置与账本。默认 `uninstall` 也开始清 `passed` 标记（以前会留一个让 `status` 看着像已安装）。
+- 自查 143 项、Python 对等 30 项全过。
+
 ## 3.6.0 — 2026-11-06
 
 - 新增 `signoff init --chain`：仓库已有钩子时不再只备份，而是存成 `<name>.local` 并在我们的钩子里**先执行**；它失败就停，`signoff uninstall` 把它原样装回 `<name>`。默认行为不变（`<name>.signoff-backup`，不串接）。
