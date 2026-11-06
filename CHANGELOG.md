@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.6.0 — 2026-11-06
+
+- 新增 `signoff init --chain`：仓库已有钩子时不再只备份，而是存成 `<name>.local` 并在我们的钩子里**先执行**；它失败就停，`signoff uninstall` 把它原样装回 `<name>`。默认行为不变（`<name>.signoff-backup`，不串接）。
+- 修：生成的 CI 工作流在浅克隆下会红。`git rev-parse HEAD~1` 找不到对象时会把名字原样打印到 stdout，导致 `audit --range "HEAD~1..HEAD"` 解析失败退 2。现在工作流 `fetch-depth: 0`、用 `git cat-file -e "$BASE^{commit}"` 判断、必要时 `--unshallow`，取不到就打印跳过。
+- 修：`signoff --version` / `-v` 之前落到“未知命令”退 2；现在打印版本退 0。HELP 里的旧名「一诺过五关」改回「落印」。
+- 新增 `.github/workflows/ci.yml`：node 18/20/22 × ubuntu/macos/windows 矩阵跑 `node test/selftest.js`，另一个 job 跑 python 对等，再一个 job 做 `npm pack` + 全局安装 + `init`/`commit`/`audit --since-install`/`doctor` 冒烟。
+- 自查 126 项（新增 `--version`、HELP 名字、CI 取全历史、CI 取已验证 rev、串接 8 项）全过，Python 对等 30 项全过。
+
 ## 3.5.1 — 2026-11-06
 
 - 修：重复 `signoff init` 时把 `.signoff/installed.json` 里的 `version` 更新成当前钩子版本（`sha`/`ts` 仍保留第一次安装点）。否则 `doctor` 每次升级后都会报一条永久的 `install-version` 警告——那正是 doctor 要避免的噪音。
