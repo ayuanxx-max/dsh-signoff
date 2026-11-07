@@ -1,45 +1,72 @@
 ---
-title: SignOff 已发布社区与市场分布（2026-11-06）
+title: SignOff 发布与市场分布（2026-11-07）
 ---
-flowchart TB
-  H["dsh-signoff · SignOff / 落印<br/>v3.9.4 npm latest · 25 条账本 · 164+30 自查 · 11 topics"]
-
-  subgraph LIVE["已上线 · 可被搜索 / 安装"]
-    direction LR
-    M1["npm registry<br/>唯一安装入口"]
-    M2["GitHub 仓库 + Releases<br/>v3.9.4 双语说明"]
-    M3["官方 MCP Registry<br/>io.github.ayuanxx-max/signoff@3.9.4"]
-    M4["OpenViking 文档库<br/>发布记录与方案快照"]
+flowchart LR
+  subgraph SRC["⓪ 唯一事实源 · 其余都是它的投影"]
+    direction TB
+    R1["GitHub 仓库 master<br/>源码 · 钩子模板 · CI · 文档"]
+    R2["npm tarball dsh-signoff@3.9.4<br/>package.json 带 mcpName"]
+    R3["server.json + smithery.yaml<br/>市场清单的原料"]
+    R4["docs/diagrams/src/*.mmd<br/>图也是源文件"]
+    R1 ~~~ R2 ~~~ R3 ~~~ R4
   end
 
-  subgraph PEND["已提交 · 等对方审核"]
-    direction LR
-    M5["awesome-mcp-servers<br/>PR #18813 · Developer Tools"]
-    M6["Glama 徽章<br/>索引后自动出分"]
+  subgraph PUB["① 发布渠道 · 内容在这里真正可下载"]
+    direction TB
+    C1["npm registry<br/>dsh-signoff · latest 3.9.4<br/>唯一安装入口"]
+    C2["GitHub Releases<br/>v3.9.4 中英双语 + tgz"]
+    C3["官方 MCP Registry<br/>io.github.ayuanxx-max/signoff@3.9.4<br/>已过 mcpName 校验"]
+    C4["OpenViking 文档库<br/>viking://resources/dsh/signoff-*"]
+    C1 ~~~ C2 ~~~ C3 ~~~ C4
   end
 
-  subgraph READY["物料已备 · 未提交"]
-    direction LR
-    M7["Smithery<br/>smithery.yaml 就绪，需 OAuth"]
-    M8["mcp.so · PulseMCP<br/>拉官方 registry，通常自动"]
-    M9["ClawHub 技能市场<br/>SKILL.md 就绪"]
-    M10["其余 awesome-* 清单<br/>git-hooks · pre-commit · ai-agents"]
+  subgraph IDX["② 索引与目录 · 决定别人能不能找到你"]
+    direction TB
+    subgraph IDXP["已提交 / 会自动发生"]
+      direction TB
+      I1["awesome-mcp-servers · PR #18813<br/>Developer Tools 分类 · 人工审核 1–3 天"]
+      I2["Glama · 按仓库自动建索引并出分<br/>列表条目自带它的徽章"]
+      I1 ~~~ I2
+    end
+    subgraph IDXR["还没提交 · 物料已备"]
+      direction TB
+      I3["Smithery · smithery.yaml 已就绪<br/>需 GitHub OAuth 在网页提交"]
+      I4["mcp.so · PulseMCP<br/>多拉官方 registry，通常自动收录"]
+      I5["ClawHub 技能市场<br/>技能已写好，未发布"]
+      I6["其余 awesome-* 清单<br/>git-hooks / pre-commit / ai-agents"]
+      I3 ~~~ I4 ~~~ I5 ~~~ I6
+    end
   end
 
-  N["记住：Registry 是索引，不是流量<br/>带来访问量的是人工清单与被引用"]
+  subgraph SEE["③ 发现入口 · 用户实际从哪里进来"]
+    direction TB
+    V1["GitHub 搜索与 topics<br/>11 个 topic 已配"]
+    V2["清单页点击"]
+    V3["别人转述 / 文章 / 对比表"]
+    V4["npm 站内搜索 dsh-signoff"]
+    V1 ~~~ V2 ~~~ V3 ~~~ V4
+  end
 
-  H --> LIVE
-  H -.-> PEND
-  H -.-> READY
-  M3 -.-> N
+  N1["关键区分：Registry 与目录是索引，不产生流量<br/>流量来自人工清单、被引用、被搜索命中"]
+  N2["进度：发布渠道 4/4 完成<br/>索引 = 1 待审 + 1 自动 + 1 可提交 + 1 同步 + 2 未提交"]
 
-  classDef hub fill:#0f172a,stroke:#0f172a,color:#ffffff
-  classDef live fill:#dcfce7,stroke:#0e9f6e,stroke-width:1.4px,color:#14532d
-  classDef pend fill:#fef3c7,stroke:#d97706,stroke-width:1.4px,color:#7c2d12
-  classDef ready fill:#f1f5f9,stroke:#94a3b8,stroke-width:1.2px,color:#334155
+  SRC -->|发布| PUB
+  PUB -->|登记为可发现| IDX
+  IDX -->|被人看到| SEE
+  C3 -.->|下游同步| I4
+  C2 -.->|自动建索引| I2
+  IDX -.-> N1
+  IDX -.-> N2
+
+  classDef src fill:#0f172a,stroke:#0f172a,color:#ffffff
+  classDef pub fill:#dcfce7,stroke:#0e9f6e,stroke-width:1.4px,color:#14532d
+  classDef pending fill:#fef3c7,stroke:#d97706,stroke-width:1.4px,color:#7c2d12
+  classDef todo fill:#f1f5f9,stroke:#94a3b8,stroke-width:1.2px,color:#334155
+  classDef see fill:#eef2ff,stroke:#4f46e5,stroke-width:1.3px,color:#312e81
   classDef note fill:#ffffff,stroke:#0f172a,stroke-dasharray:4 3,color:#0f172a
-  class H hub
-  class M1,M2,M3,M4 live
-  class M5,M6 pend
-  class M7,M8,M9,M10 ready
-  class N note
+  class R1,R2,R3,R4 src
+  class C1,C2,C3,C4 pub
+  class I1,I2 pending
+  class I3,I4,I5,I6 todo
+  class V1,V2,V3,V4 see
+  class N1,N2 note

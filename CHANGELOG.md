@@ -1,3 +1,9 @@
+## 3.9.5（2026-11-07）
+
+- 文档：README 顶部新增「一张图看懂」，用 Mermaid 生成的能力全景图与用户路径图解释五关、边界与已知坑。
+- 图表：三张图全部改为 Mermaid 源文件（`docs/diagrams/src/*.mmd`），可 diff、可重渲；旧的 HTML 拼版已移除。
+- 一致性：图里的判定标准与 `docs/diagrams/README.md`、`signoff explain p1..p5` 的文案同源，避免图文漂移。
+
 # Changelog
 
 ## 3.9.4 — 2026-11-06

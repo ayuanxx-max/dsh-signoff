@@ -1,65 +1,84 @@
 ---
-title: SignOff 能力与关系图（v3.9.4）
+title: SignOff 完整能力与关系（v3.9.4）
 ---
 flowchart LR
-  subgraph E["① 入口层 · 谁在调用"]
+  subgraph L1["① 入口层 · 谁在调用它"]
     direction TB
-    A1["CLI<br/>run · p1..p5 · init · status · doctor · audit · explain · mcp"]
-    A2["Git 钩子<br/>pre-commit · commit-msg · pre-push<br/>已有钩子可链式为 .local"]
-    A3["CI<br/>signoff.yml · fetch-depth 0"]
-    A4["Agent 面<br/>MCP 5 工具 · 技能 SKILL.md"]
+    A1["CLI<br/>run · p1..p5 · init · status · doctor<br/>audit · explain · mcp · uninstall<br/>--json · --strict · --dry-run · --chain"]
+    A2["Git 钩子<br/>pre-commit 跑闸门<br/>commit-msg 查 trailer<br/>pre-push 查审计窗口<br/>已有钩子链式为 .local"]
+    A3["CI · signoff.yml<br/>同一套闸门再跑一遍<br/>fetch-depth 0 才能审计"]
+    A4["Agent 面<br/>MCP 五工具 · 技能<br/>isError 跟随退出码"]
+    A1 ~~~ A2 ~~~ A3 ~~~ A4
   end
 
-  D["guard.js 分发器<br/>选关 · 取锁 · 收集结果 · 决定退出码<br/>0 通过 / 1 判红 / 2 用法环境"]
-
-  subgraph G["② 五关并列 · 任一判红则退出码为 1，没有部分通过"]
+  subgraph L2["② 调度层 · guard.js 决定跑什么、谁算通过"]
     direction TB
-    P5["P5 反空话<br/>占位符 · 无证据结论"]
-    P4["P4 账本<br/>哈希链断裂 · 回滚点消失"]
-    P3["P3 队列<br/>card.json 状态不是 done"]
-    P2["P2 覆盖<br/>场景数 / 断言数低于阈值"]
-    P1["P1 测试<br/>测试命令退出码非 0"]
+    D1["解析<br/>cwd 归一到仓库根<br/>SIGNOFF_* 环境 · 管道点 filtered"]
+    D2["取锁<br/>.signoff/lock/ 目录 + owner.json<br/>mkdir 原子；死进程或超 10 分钟回收<br/>等待上限 SIGNOFF_LOCK_WAIT_MS=8s"]
+    D3["选关<br/>默认五关全跑<br/>可点名 p1..p5；钩子只跑本阶段该跑的"]
+    D4["定判决<br/>0 全过 / 1 任一关红 / 2 用法或环境错<br/>--json 输出结构化结果"]
+    D1 ~~~ D2 ~~~ D3 ~~~ D4
   end
 
-
-  subgraph K["③ 内核配套"]
+  subgraph L3["③ 五关 · 每关都回答：读什么 → 判什么 → 怎么修"]
     direction TB
-    C["core.js 共享底座<br/>配置 · .signoff/ · --json · 退出码"]
-    L["锁 .signoff/lock/ + owner.json<br/>陈旧 = 进程死 或 超过 10 分钟"]
+    P1["P1 测试<br/>读：config.test_cmd，否则自动识别<br/>判：测试命令退出码 ≠ 0<br/>修：把命令固化进 config"]
+    P2["P2 覆盖<br/>读：场景文件数与断言数<br/>判：低于阈值，或声称成功却无断言<br/>修：补断言；--strict 更严"]
+    P3["P3 队列<br/>读：tasks/id/card.json 的 status<br/>判：不是 done，或字段缺失<br/>修：把卡片验收条件做完"]
+    P4["P4 账本<br/>读：audit.log 哈希链 + 回滚点提交<br/>判：链断、回滚点消失、审计缺 trailer<br/>修：p4 ask/confirm 补记或回滚"]
+    P5["P5 反空话<br/>读：本次新增的文档<br/>判：占位符（词边界）· 无证据结论 · 空话词<br/>修：给证据或删句子"]
+    P1 ~~~ P2 ~~~ P3 ~~~ P4 ~~~ P5
   end
 
-  subgraph DT["④ 数据层 · 留在仓库里的东西"]
+  subgraph L4["④ 状态机 · 一次提交里发生了什么"]
     direction TB
-    S1["config.json<br/>阈值 · test_cmd"]
-    S2["installed.json<br/>安装点 sha"]
-    S3["passed<br/>tree + mode + ts"]
-    S4["audit.log<br/>只追加哈希链"]
-    S5["p3.json / skips<br/>SIGNOFF_SKIP 留痕"]
+    S1["pre-commit<br/>五关全过 → 写 marker {tree, mode}"]
+    S2["commit-msg<br/>marker.tree == HEAD tree ?<br/>是 → 追加 Signoff-Pass trailer"]
+    S3["pre-push<br/>审计窗口内提交逐个查<br/>缺 trailer 即红"]
+    S4["CI<br/>再跑五关 + 审计<br/>无 git 身份时不冒充通过"]
+    S1 ~~~ S2 ~~~ S3 ~~~ S4
   end
 
-  subgraph X["⑤ 外部依赖 · 只有两样是硬要求"]
+  subgraph L5["⑤ 产物与记录 · 判断留下证据"]
     direction TB
-    X1["Node ≥ 18"]
-    X2["git"]
-    X3["测试运行器"]
-    X4["Python · 仅对等测试"]
-    X5["GitHub Actions · 可选"]
+    F1["passed<br/>tree + mode(pass|skip) + ts<br/>tree 变了自动失效"]
+    F2["audit.log<br/>只追加哈希链：prevHash · action · rollback"]
+    F3["installed.json<br/>安装点 sha / 时间 / 版本<br/>审计窗口左边界"]
+    F4["提交信息<br/>Signoff-Pass: tree<br/>--no-verify 的唯一破绽"]
+    F5["config.json<br/>阈值 · 测试命令 · P5 词表"]
+    F1 ~~~ F2 ~~~ F3 ~~~ F4 ~~~ F5
   end
 
-  E --> D
-  D --> G
-  D -.-> K
-  G --> DT
-  K --> DT
-  DT -->|审计依赖 git 历史| X
+  subgraph L6["⑥ 外部依赖 · 只有两样是硬要求"]
+    direction TB
+    X1["Node ≥ 18<br/>纯 JS · 无构建 · 无原生模块"]
+    X2["git<br/>钩子位置 · 提交历史 · 祖先校验"]
+    X3["测试运行器<br/>仓库自己那一套；缺失则退化后备命令"]
+    X4["Python · 仅对等测试<br/>运行时永不调用"]
+    X5["GitHub Actions<br/>可选，--no-ci 跳过"]
+    X1 ~~~ X2 ~~~ X3 ~~~ X4 ~~~ X5
+  end
+
+  L1 -->|调用| L2
+  L2 -->|按阶段选关| L3
+  L3 -->|写 marker / trailer| L4
+  L4 -->|落盘| L5
+  L5 -->|审计比对| L6
+
+  N["退出码即判决：0 通过 · 1 判红 · 2 用法与环境<br/>没有“部分通过”这回事"]
+  L2 -.-> N
 
   classDef entry fill:#eef3fb,stroke:#2f6fdd,stroke-width:1.4px,color:#0f2d5c
+  classDef sched fill:#fdf3e7,stroke:#b45309,stroke-width:1.4px,color:#5c2c05
   classDef gate fill:#e8f7f0,stroke:#0e9f6e,stroke-width:1.4px,color:#0b4a33
-  classDef core fill:#fdf3e7,stroke:#b45309,stroke-width:1.4px,color:#5c2c05
+  classDef state fill:#eef2ff,stroke:#4f46e5,stroke-width:1.4px,color:#312e81
   classDef data fill:#f3ecfd,stroke:#7c3aed,stroke-width:1.4px,color:#3d1e6b
   classDef ext fill:#f4f5f7,stroke:#6b7280,stroke-width:1.2px,color:#374151
+  classDef note fill:#ffffff,stroke:#0f172a,stroke-dasharray:4 3,color:#0f172a
   class A1,A2,A3,A4 entry
+  class D1,D2,D3,D4 sched
   class P1,P2,P3,P4,P5 gate
-  class D,C,L core
-  class S1,S2,S3,S4,S5 data
+  class S1,S2,S3,S4 state
+  class F1,F2,F3,F4,F5 data
   class X1,X2,X3,X4,X5 ext
+  class N note

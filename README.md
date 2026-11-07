@@ -21,6 +21,25 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | 自查 | `signoff doctor [--json]` | 为什么没按预期生效：钩子、PATH、版本、安装点、账本、装钩子之后的缺失提交 |
 | P5 反空话 | `signoff p5` | 文档里有没有空话、`绝对`化断言、无数字的`已验证` |
 
+## 一张图看懂
+
+![SignOff 完整能力与关系](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-1-capability.png)
+
+六个层次从左到右：**入口**（CLI / git 钩子 / CI / Agent 面）都走同一个 `guard.js`；**调度**决定跑哪几关、
+谁算通过；**五关**每关都写清“读什么、判什么、怎么修”；**状态机**说明一次提交里 marker 与 trailer 是怎么产生的；
+**产物**是判断留下的证据；最右是**外部依赖**——只有 Node ≥18 与 git 是硬要求，其余都可缺。
+判定没有“部分通过”：退出码 0 通过、1 任一关判红、2 用法或环境错。
+
+![用户路径：安装、使用、排错](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-3-user.png)
+
+上半部分按 0→5 的先后排：前置检查 → 安装 → 初始化 → 日常提交 → 红了怎么办 → 升级与卸载。
+红框是必做，黄框是最容易踩的坑（`--chain`、`--lock-test`、npm proxy）。
+下半部分三块是“不改你的流程、但会改变你看到的现象”：平台差异、环境差异，以及三条红线
+（`--no-verify`、`SIGNOFF_SKIP=1`、调阈值让红变绿）。
+
+两张图都由 Mermaid 生成，源文件在 [`docs/diagrams/src/`](docs/diagrams/src/)，改文案重渲一次即可，
+不用重画。
+
 ## 一、案例：本次 DSH 2.0.22-next升级后在修复（dsh-session-fork-tree 0.9.34）bug里，五关各自做了什么？
 
 这次修的是“升级 DSH 后，点侧栏「···」菜单，菜单闪一下就消失”。五关实际起了什么作用，逐条列出，包括没发挥作用的那一关。
