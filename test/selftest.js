@@ -806,6 +806,19 @@ function main() {
       const decl = JSON.parse(fs.readFileSync(path.join(sharer, "signoff.json"), "utf8"));
       check("init --share writes gates", Array.isArray(decl.gates) && decl.gates.length === 5 ? 1 : 0, 1);
       check("init --share does not pin the runner", decl.test_cmd === undefined ? 1 : 0, 1);
+
+      // A bootstrap during the first commit lands without a sha; a later init repairs it.
+      const repair = fresh("repair");
+      check("init before the first commit", run(["init", "--no-ci", "--quiet"], repair, env).status, 0);
+      const ip = JSON.parse(fs.readFileSync(path.join(repair, ".signoff", "installed.json"), "utf8"));
+      check("install point starts without a sha", ip.sha === "" ? 1 : 0, 1);
+      fs.writeFileSync(path.join(repair, "a.txt"), "a", "utf8");
+      git(["add", "-A"], repair, env);
+      git(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "first"], repair, env);
+      run(["init", "--no-ci", "--quiet"], repair, env);
+      const ip2 = JSON.parse(fs.readFileSync(path.join(repair, ".signoff", "installed.json"), "utf8"));
+      check("re-init fills the install point", /^[0-9a-f]{40}$/.test(ip2.sha) ? 1 : 0, 1);
+      check("audit --since-install works after the repair", run(["audit", "--since-install"], repair, env).status, 0);
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }

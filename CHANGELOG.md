@@ -1,3 +1,12 @@
+## 3.11.1（2026-11-07）
+
+- 修复：机器层的自动安装在**首次提交**时就跑起来了，那时 `HEAD` 还不存在，`installed.json` 记成了空 sha，
+  导致 `audit --since-install` 从此不可用（CI 的 smoke job 就是这样红的）。
+  现在提交之后再跑一次 `signoff init` 会把安装点补上，并说明「首次 bootstrap 早于这次提交」。
+- `audit --since-install` 遇到空 sha 时给出可执行的提示，而不是笼统的「没有安装点」。
+- `.github/workflows/mcp-registry.yml` 加三次重试：registry 偶尔拒绝云端出口连接，一次失败不该让版本靠人手补发。
+- 测试：新增「首次提交前 init → 提交 → 再 init 补 sha → audit 可用」用例（`npm test` 188 passed）。
+
 ## 3.11.0（2026-11-07）
 
 - **仓库声明 `signoff.json`**：`signoff init --share` 在仓库根写一份声明并提交它，`.signoff/` 仍是 gitignore 的；
