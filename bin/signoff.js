@@ -63,6 +63,7 @@ signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix r
   signoff explain <p1..p5>                   what a gate checks and how it decides
   signoff mcp                                serve the gates over stdio (MCP clients)
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
+signoff release [--pre|--post] [--json]     does the published artifact actually work?
   signoff audit --since-install             only commits after the install point (refuses
                                              a point that is not an ancestor of HEAD)
   signoff uninstall [--keep-config] [--all]  remove hooks + CI workflow
@@ -196,6 +197,10 @@ if (cmd === "audit") {
     console.error(`signoff: audit failed: ${e && e.message}`);
     process.exit(1);
   }
+}
+if (cmd === "release") {
+  require("../lib/release").main(rest).then(function (code) { process.exit(code); });
+  return;
 }
 if (cmd === "explain") process.exit(require("../lib/explain.js").run(rest));
 if (cmd === "cov") process.exit(require("../lib/cov.js").run(rest));

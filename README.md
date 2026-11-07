@@ -538,3 +538,25 @@ Discovery and promotion notes: [docs/promotion.md](docs/promotion.md).
 ## License
 
 MIT
+
+## 发布闸门（signoff release）
+
+`p1..p5` 检查的是工作树，`signoff release` 检查的是**发布物**——这一段过去没有任何闸门覆盖，于是
+注册表清单能把 `packages[].version` 钉在 3.9.4 上继续发布 40 个版本没有被发现。
+
+```powershell
+signoff release --pre    # 发布前：清单自洽 + 打包 + 装到临时目录 + --version + mcp 握手（14 项）
+signoff release --post   # 发布后：npm latest、注册表 isLatest / packages[].version、README 图链
+```
+
+它第一次运行就抓到一个真缺陷：`files[]` 漏了 `integrations/`，导致 3.9.3 起所有安装形态的
+`signoff mcp` 都是 `MODULE_NOT_FOUND`，而注册表恰好教人用 `npx signoff-cli mcp`。现在 `integrations/`
+已进包，`--pre` 为 14/14。
+
+### Release gate (English)
+
+`p1..p5` read the working tree; `signoff release` reads the published artifact. `--pre` runs offline
+(manifest consistency, `npm pack`, install into a temp dir, `--version`, an `mcp` initialize handshake -
+14 checks); `--post` runs after publish and verifies npm `dist-tags.latest`, the MCP registry entry, and
+every README image URL. Its first run found that `files[]` omitted `integrations/`, so every installed
+copy since 3.9.3 had a `signoff mcp` that failed with `MODULE_NOT_FOUND`.

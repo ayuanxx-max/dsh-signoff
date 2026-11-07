@@ -1,3 +1,14 @@
+## 4.1.2
+
+**新增 `signoff release`：闸门第一次覆盖到"发布物"，它第一次运行就抓到一个真缺陷。**
+
+- `signoff release --pre`：清单自洽（name/version/bin/files/server.json/mcpName/repository）、`npm pack` 成功、
+  压缩包内含 `bin/lib/integrations`、装到临时目录后 `--version` 与 `mcp` 握手都成立。
+- `signoff release --post`：发布后核对 npm `dist-tags.latest`、注册表 `isLatest` 与 `packages[0].version`、
+  README 里每个 raw 链接是否 200。
+- **它抓到的第一个缺陷**：`files[]` 漏了 `integrations/`，所以从 3.9.3 起所有装出来的包
+  `signoff mcp` 都是 `MODULE_NOT_FOUND` —— 而注册表恰好让人用 `npx signoff-cli mcp`。已补进 `files[]`。
+
 ## 4.1.1
 
 **修注册表归属校验：`package.json` 的 `mcpName` 还指向旧仓库名。**
