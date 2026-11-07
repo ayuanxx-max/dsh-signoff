@@ -1,3 +1,17 @@
+## 3.10.0（2026-11-07）
+
+**零接触安装**：`npm i -g dsh-signoff` 之后不再需要 `signoff init`。
+
+- 新增 `signoff ensure [--global] [--json] [--quiet]`：幂等安装，仓库层 + 机器层。
+- 新增 `lib/bootstrap.js`：机器层用 `core.hooksPath` 指向 `~/.signoff/hooks`，本机所有仓库（含新克隆）
+  下一次 commit 就受约束；派发脚本先执行仓库自带的 `.git/hooks/<stage>`，判决仍归仓库。
+- `package.json` 增加 `postinstall`：全局安装时自动装机器层，在仓库内安装时顺便把该仓库五关装好；
+  postinstall 永不失败（失败也 exit 0，不会弄坏别人的 npm install）。
+- 未 opt-in 的仓库只跑 P1（测试），不写 `.signoff/config.json`、不写 marker、不带 trailer：
+  机器层不会把「没同意过 P2–P5 规矩」的仓库拦在门外。
+- 两个逃生阀：`SIGNOFF_NO_BOOTSTRAP=1`、`SIGNOFF_NO_MACHINE=1`；撤销机器层用 `signoff uninstall --global`。
+- 测试：新增 ensure / 机器层 / 轻量关 的用例（`npm test` 177 passed）。
+
 ## 3.9.8（2026-11-07）
 
 - 文档：英文版两张图（能力图、用户路径图）从中文段落移到 `## English` 段内，英文读者按自己的语言路径阅读，

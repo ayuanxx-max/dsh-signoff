@@ -34,6 +34,8 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff init [--no-ci] [--prepare] [--quiet]  install hooks + CI so the gates run themselves
   signoff init --chain | --lock-test | --reset-install   keep existing hooks / pin the
                                              detected runner / move the install point to HEAD
+  signoff ensure [--global] [--json]         idempotent install; gates also self-install
+                                             (--global = guard every repo on this machine)
   signoff guard [--full]                     run the gate set the hooks use (right now)
   signoff status                             is this repo guarded?
 signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
@@ -124,12 +126,20 @@ if (cmd === "-v" || cmd === "--version" || cmd === "version") {
   process.exit(0);
 }
 if (cmd === "doctor") process.exit(require("../lib/doctor").run(rest));
+if (cmd === "ensure") process.exit(require("../lib/bootstrap").run(rest));
 if (cmd === "all") process.exit(runAll(rest));
 if (cmd === "init") process.exit(guard("init", rest));
 if (cmd === "guard") process.exit(guard("guard", rest));
 if (cmd === "hook") process.exit(guard("hook", rest));
 if (cmd === "status") process.exit(guard("status", rest));
-if (cmd === "uninstall") process.exit(guard("uninstall", rest));
+if (cmd === "uninstall") {
+  if (rest.includes("--global")) {
+    const r = require("../lib/bootstrap").uninstallGlobal();
+    console.log(r.removed ? `signoff: machine layer removed (${r.dir})` : "signoff: machine layer was not installed");
+    process.exit(0);
+  }
+  process.exit(guard("uninstall", rest));
+}
 if (cmd === "audit") {
   try {
     process.exit(require(path.join(__dirname, "..", "lib", "audit.js")).run(rest) || 0);

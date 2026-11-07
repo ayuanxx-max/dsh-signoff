@@ -40,6 +40,31 @@ signoff all               # p1 + p2 + p5 + p4 verify
 两张图都由 Mermaid 生成，源文件在 [`docs/diagrams/src/`](docs/diagrams/src/)，改文案重渲一次即可，
 不用重画。
 
+## 零接触：装一次，之后不用管
+
+目标是一条命令之后不再需要任何操作：`npm i -g dsh-signoff` 装完即生效，之后每次 `git commit` 都自动受五关约束。
+
+| 层 | 什么时候发生 | 覆盖范围 |
+| --- | --- | --- |
+| 机器层 | `npm i -g` 的 postinstall 写 `core.hooksPath` → `~/.signoff/hooks` | 本机**所有**仓库，新克隆的也算 |
+| 仓库层 | postinstall（在某个仓库里执行时）或 `signoff ensure` | 该仓库的 `.git/hooks`、`.signoff/config.json`、CI workflow、ledger |
+| 关内 | 每次 commit | 已 opt-in 的仓库跑 P1–P5；未 opt-in 的仓库只跑 P1（测试必须过），不写任何状态 |
+
+```bash
+npm i -g dsh-signoff      # 一次；postinstall 自动装好机器层 + 当前仓库
+signoff ensure            # 换个仓库想把五关都装上，跑这一条（幂等）
+signoff ensure --global   # 只重装/修复机器层
+signoff ensure --json     # 给脚本看的结构化结果
+```
+
+行为约定：
+
+- 已 opt-in（有 `.signoff/config.json`）：pre-commit 跑全套五关，PASS 才写 marker 和 trailer。
+- 未 opt-in：只跑 P1（有测试才跑，没测试就明说"没检测到测试运行器"后放行），不写 `.signoff` 配置、不带 trailer。
+- 仓库自带的钩子不会被绕过：机器层先执行 `.git/hooks/<stage>`，它若是 signoff 的钩子就直接以它的判决为准。
+- 临时退出：`SIGNOFF_NO_BOOTSTRAP=1`（不做自动安装）、`SIGNOFF_NO_MACHINE=1`（不跑机器层的轻量关）。
+- 撤销机器层：`signoff uninstall --global`。
+
 ## 一、案例：本次 DSH 2.0.22-next升级后在修复（dsh-session-fork-tree 0.9.34）bug里，五关各自做了什么？
 
 这次修的是“升级 DSH 后，点侧栏「···」菜单，菜单闪一下就消失”。五关实际起了什么作用，逐条列出，包括没发挥作用的那一关。
@@ -211,6 +236,20 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 | P3 queue | `signoff p3 validate\|plan\|collect` | Cards complete, waves collision-free, nobody out of scope or empty-handed |
 | P4 ledger | `signoff p4 ask\|confirm\|verify\|export` | Did the risky action hold a ticket, is the rollback point still there |
 | P5 anti-slop | `signoff p5` | Empty words, absolute claims, "verified" with no number |
+
+### Zero-touch
+
+One command, then nothing: `npm i -g dsh-signoff` writes a machine-wide `core.hooksPath`
+(`~/.signoff/hooks`) and bootstraps the repo it is installed from.
+
+| Layer | When | Scope |
+| --- | --- | --- |
+| machine | postinstall of the global install | every repo on this machine, including fresh clones |
+| repo | postinstall inside a repo, or `signoff ensure` | `.git/hooks`, `.signoff/config.json`, CI workflow, ledger |
+| gates | every commit | opted-in repos run all five; unopted repos run only P1 (tests), and write no state |
+
+Exit hatches: `SIGNOFF_NO_BOOTSTRAP=1` (no auto install), `SIGNOFF_NO_MACHINE=1` (skip the light guard),
+`signoff uninstall --global` (remove the machine layer). A repo's own hook always runs first and keeps its verdict.
 
 ### Case: what the five gates did in the 0.9.34 bug fix after the DSH 2.0.22-next upgrade
 

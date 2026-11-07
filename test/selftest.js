@@ -29,14 +29,20 @@ function run(args, cwd, env) {
   });
 }
 
-function gitOut(args, cwd) {
-  const r = spawnSync("git", args, { cwd, encoding: "utf8" });
+// Fixture repos are not the user's machine: keep the machine-wide dispatcher out of the
+// suite so a commit inside a fixture only runs what the test asked for.
+function gitEnv(extra) {
+  return { ...process.env, SIGNOFF_HOME: HOME, SIGNOFF_NO_MACHINE: "1", ...(extra || {}) };
+}
+
+function gitOut(args, cwd, env) {
+  const r = spawnSync("git", args, { cwd, encoding: "utf8", env: gitEnv(env) });
   if (r.status !== 0) throw new Error(`git ${args.join(" ")}: ${r.stderr}`);
   return r.stdout;
 }
 
-function git(args, cwd) {
-  gitOut(args, cwd);
+function git(args, cwd, env) {
+  gitOut(args, cwd, env);
 }
 
 // Git runs hooks through sh, and sh finds an extension-less `signoff` on PATH.
@@ -696,6 +702,81 @@ function main() {
     check("doctor sees the leftover marker", /leftover/.test(d(["doctor", "--quiet"]).stdout) ? 1 : 0, 1);
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
+  }
+
+  // ---- zero-touch bootstrap: ensure, the machine layer, and the light guard
+  {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "signoff-ensure-"));
+    try {
+      const home = path.join(base, "home");
+      const gitcfg = path.join(base, "gitconfig");
+      const gitcfgSystem = path.join(base, "gitconfig-system");
+      fs.writeFileSync(gitcfg, "", "utf8");
+      fs.writeFileSync(gitcfgSystem, "", "utf8");
+      // GIT_CONFIG_GLOBAL keeps the machine layer out of the real ~/.gitconfig.
+      const env = { SIGNOFF_HOME: home, GIT_CONFIG_GLOBAL: gitcfg, GIT_CONFIG_SYSTEM: gitcfgSystem };
+      const repo = path.join(base, "repo");
+      fs.mkdirSync(repo, { recursive: true });
+      git(["init", "-q"], repo, env);
+      git(["config", "user.email", "a@b.c"], repo, env);
+      git(["config", "user.name", "t"], repo, env);
+      fs.writeFileSync(path.join(repo, "README.md"), "# fixture\n", "utf8");
+
+      const first = run(["ensure"], repo, env);
+      check("ensure exit code", first.status, 0);
+      check("ensure writes the pre-commit hook", fs.existsSync(path.join(repo, ".git", "hooks", "pre-commit")), true);
+      check("ensure writes config.json", fs.existsSync(path.join(repo, ".signoff", "config.json")), true);
+      check("ensure writes installed.json", fs.existsSync(path.join(repo, ".signoff", "installed.json")), true);
+
+      const second = JSON.parse(run(["ensure", "--json"], repo, env).stdout);
+      check("ensure is idempotent", second.repo.installed, false);
+      check("ensure reports the repo guarded", second.repo.ok, true);
+
+      const g = JSON.parse(run(["ensure", "--global", "--json"], repo, env).stdout);
+      check("ensure --global ok", g.machine.ok, true);
+      check("machine hook written", fs.existsSync(path.join(home, "hooks", "pre-commit")), true);
+      const hooksPath = () =>
+        spawnSync("git", ["config", "--global", "--get", "core.hooksPath"], {
+          cwd: repo,
+          encoding: "utf8",
+          env: { ...process.env, ...env },
+        });
+      check("core.hooksPath set", hooksPath().stdout.trim().length > 0 ? 1 : 0, 1);
+      run(["uninstall", "--global"], repo, env);
+      check("uninstall --global unsets it", hooksPath().status, 1);
+
+      const fresh = (name) => {
+        const d = path.join(base, name);
+        fs.mkdirSync(d, { recursive: true });
+        git(["init", "-q"], d, env);
+        git(["config", "user.email", "a@b.c"], d, env);
+        git(["config", "user.name", "t"], d, env);
+        return d;
+      };
+
+      // The machine layer reaches unrepos that never opted in: only P1 runs, nothing is installed.
+      const raw = fresh("raw");
+      fs.writeFileSync(
+        path.join(raw, "package.json"),
+        JSON.stringify({ scripts: { test: 'node -e "process.exit(1)"' } }),
+        "utf8"
+      );
+      git(["add", "-A"], raw, env);
+      const light = run(["hook", "pre-commit"], raw, { SIGNOFF_HOME: home });
+      check("light guard blocks a failing test", light.status, 1);
+      check("light guard installs nothing", fs.existsSync(path.join(raw, ".signoff", "config.json")), false);
+
+      const good = fresh("good");
+      fs.writeFileSync(
+        path.join(good, "package.json"),
+        JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }),
+        "utf8"
+      );
+      git(["add", "-A"], good, env);
+      check("light guard passes a green test", run(["hook", "pre-commit"], good, { SIGNOFF_HOME: home }).status, 0);
+    } finally {
+      fs.rmSync(base, { recursive: true, force: true });
+    }
   }
 
   for (const line of AUDIT) console.log(`AUDIT ${line.replace(/\n/g, "\nAUDIT ")}`);
