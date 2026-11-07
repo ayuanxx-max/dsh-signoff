@@ -55,7 +55,7 @@ GitHub 的搜索会索引 description、topics、README 正文；topics 为空�
 ```bash
 # 近 14 天浏览量/克隆量（需要 push 权限的 token）
 curl -s -H "Authorization: token $TOKEN" \
-  https://api.github.com/repos/ayuanxx-max/dsh-signoff/traffic/views
+  https://api.github.com/repos/ayuanxx-max/signoff-cli/traffic/views
 # 每周 npm 下载
 curl -s https://api.npmjs.org/downloads/point/last-week/dsh-signoff
 ```

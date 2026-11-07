@@ -1,3 +1,15 @@
+## 4.1.0
+
+**仓库改名为 `ayuanxx-max/signoff-cli`，与 npm 包名对齐。**
+
+- GitHub 仓库 `dsh-signoff` → `signoff-cli`；网页、`git clone`、pre-commit 的 `repo:`、`uses:` 由 GitHub 301 承接，
+  老地址仍可用（实测 `raw.githubusercontent` 老路径同样返回 200）。
+- MCP 注册表条目改为 `io.github.ayuanxx-max/signoff-cli`（注册表名与仓库名绑定）；旧条目
+  `io.github.ayuanxx-max/signoff` 保留为历史，不再更新。
+- `package.json#repository`、`server.json#repository.url`、README/文档里的绝对链接、`signoff.json` 的 schema URL
+  全部指向新仓库。
+- 包名、命令（`signoff`）、功能集不变。
+
 ## 4.0.2
 
 **修 MCP 注册表发布：`server.json` 里 `packages[0].version` 一直停在 3.9.4。**

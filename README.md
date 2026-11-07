@@ -1,7 +1,7 @@
 # 落印 / SignOff
 
 > **包名 4.0.0 起为 `signoff-cli`**（曾用名 `dsh-signoff`，旧包已标记 deprecated）。
-> 命令仍是 `signoff`；仓库地址仍是 `ayuanxx-max/dsh-signoff`。DSH 只是它最早的使用场景，
+> 命令仍是 `signoff`；仓库地址仍是 `ayuanxx-max/signoff-cli`。DSH 只是它最早的使用场景，
 > 任意 git 仓库、任意语言都可以直接用。
 
 > 中文名「落印」：印落纸面才算数，对应英文名 SignOff。曾用名「一诺过五关」「执印」。命令 `signoff`、包名 `dsh-signoff` 不变。
@@ -27,14 +27,14 @@ signoff all               # p1 + p2 + p5 + p4 verify
 
 ## 一张图看懂
 
-![SignOff 完整能力与关系](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-1-capability.png)
+![SignOff 完整能力与关系](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-1-capability.png)
 
 六个层次从左到右：**入口**（CLI / git 钩子 / CI / Agent 面）都走同一个 `guard.js`；**调度**决定跑哪几关、
 谁算通过；**五关**每关都写清“读什么、判什么、怎么修”；**状态机**说明一次提交里 marker 与 trailer 是怎么产生的；
 **产物**是判断留下的证据；最右是**外部依赖**——只有 Node ≥18 与 git 是硬要求，其余都可缺。
 判定没有“部分通过”：退出码 0 通过、1 任一关判红、2 用法或环境错。
 
-![用户路径：安装、使用、排错](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-3-user.png)
+![用户路径：安装、使用、排错](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-3-user.png)
 
 上半部分按 0→5 的先后排：前置检查 → 安装 → 初始化 → 日常提交 → 红了怎么办 → 升级与卸载。
 红框是必做，黄框是最容易踩的坑（`--chain`、`--lock-test`、npm proxy）。
@@ -188,13 +188,13 @@ guard 通过后**自动续签**检查点（同一份账本不重复签，不产�
 结论放在表后面而不是前面：**前七行是它和其他工具的分野，最后两行是它的短板**——托管面没有，
 生态采用量也还没起来（1 star、周下载三位数），所以六维里"生态"给 3 分，不是 5 分。
 
-![落印 3.15.2 执行流程与四层证据](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-4-flow.png)
+![落印 3.15.2 执行流程与四层证据](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-4-flow.png)
 
 上图是一次提交的完整路径：入口（git commit / 命令 / CI）→ 三层零接触 → guard 固定顺序跑
 secrets → p5 → p1 → p2 → p4 → cov（opt-in）→ 判决 → 四层证据（marker → trailer → 账本 →
 检查点 → 锚点）。红一关即停，退出码就是判决。
 
-![落印 3.15.2 与匿名竞品：覆盖广度 vs 生态采用度](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-5-competitors.png)
+![落印 3.15.2 与匿名竞品：覆盖广度 vs 生态采用度](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-5-competitors.png)
 
 上图横轴是生态采用度，纵轴是覆盖广度。落印落在左上角——**功能全、采用低**，这是它的真实位置：
 它不在右上角跟平台级产品比采用，差异在"判决可以带走、可以事后核对"。
@@ -297,12 +297,12 @@ signoff p5 docs README.md
 ### Package name (since 4.0.0)
 
 The package is `signoff-cli`; the former name `dsh-signoff` is deprecated. The command
-stays `signoff`, the repository stays `ayuanxx-max/dsh-signoff`, and nothing about the tool
+stays `signoff`, the repository stays `ayuanxx-max/signoff-cli`, and nothing about the tool
 is DSH-specific — any git repo and any language work.
 
 ### At a glance (English)
 
-![SignOff capabilities and relations](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-1-capability-en.png)
+![SignOff capabilities and relations](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-1-capability-en.png)
 
 Six layers, left to right: **entry** (CLI / git hooks / CI / agents) all go through one `guard.js`; **dispatcher**
 decides which gates run and what counts as pass; **the five gates** each state read → decide → fix; **the state
@@ -310,7 +310,7 @@ machine** shows how the marker and the trailer appear inside a single commit; **
 verdict leaves behind; **external dependencies** — only Node ≥18 and git are hard requirements.
 There is no partial pass: exit 0 pass, 1 any gate red, 2 usage or environment error.
 
-![User path: install, use, troubleshoot](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-3-user-en.png)
+![User path: install, use, troubleshoot](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-3-user-en.png)
 
 Stages 0 → 5 in order: precheck → install → init → daily commits → when it goes red → upgrade and uninstall.
 Red boxes are must-do; amber boxes are the places people trip on (`--chain` when the repo already has husky
@@ -390,13 +390,13 @@ not an advert; the mapping plus star/download figures live in
 Read the last two rows as the honest part: **no hosted surface, and adoption is still small**
 (1 star, three-digit weekly downloads) — which is why "ecosystem" scores 3, not 5.
 
-![SignOff 3.15.2 flow and four layers of evidence](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-4-flow-en.png)
+![SignOff 3.15.2 flow and four layers of evidence](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-4-flow-en.png)
 
 One commit end to end: entries (git commit / CLI / CI) → three zero-touch layers → guard runs
 secrets → p5 → p1 → p2 → p4 → cov (opt-in) → verdict → four layers of evidence (marker → trailer →
 ledger → checkpoint → anchor). First red stops; the exit code is the verdict.
 
-![SignOff 3.15.2 vs anonymised peers](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-5-competitors-en.png)
+![SignOff 3.15.2 vs anonymised peers](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-5-competitors-en.png)
 
 Adoption on the x-axis, coverage breadth on the y. SignOff sits top-left: **full-stack, low adoption**.
 It does not compete on adoption with platform products; the difference is that a verdict can leave

@@ -13,7 +13,7 @@ npm i -g signoff-cli && cd your-repo && signoff init
 ## 2. GitHub Actions
 
 ```yaml
-- uses: ayuanxx-max/dsh-signoff@v3.15.0
+- uses: ayuanxx-max/signoff-cli@v3.15.0
   with:
     args: all
 ```
@@ -24,7 +24,7 @@ npm i -g signoff-cli && cd your-repo && signoff init
 
 ```yaml
 repos:
-  - repo: https://github.com/ayuanxx-max/dsh-signoff
+  - repo: https://github.com/ayuanxx-max/signoff-cli
     rev: v3.15.0
     hooks:
       - id: signoff-guard

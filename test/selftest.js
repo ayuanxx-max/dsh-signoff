@@ -1164,7 +1164,7 @@ check("server.json package version tracks too", srvj.packages[0].version === pkg
 check("server.json names the package", srvj.packages[0].identifier === pkgj.name, true);
 
       check("action runs signoff", /run: signoff \$\{\{ inputs.args \}\}/.test(action), true);
-      check("integrations doc lists actions", /uses: ayuanxx-max\/dsh-signoff/.test(fs.readFileSync(path.join(__dirname, "..", "docs", "integrations.md"), "utf8")), true);
+      check("integrations doc lists actions", /uses: ayuanxx-max\/signoff-cli/.test(fs.readFileSync(path.join(__dirname, "..", "docs", "integrations.md"), "utf8")), true);
 
       // 16. Deterministic fuzz: parsers must never throw on hostile input, and the
       // hashing primitives must be stable and order-sensitive.
