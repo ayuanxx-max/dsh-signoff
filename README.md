@@ -64,7 +64,7 @@ signoff ensure --json     # 给脚本看的结构化结果
 ```
 
 npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所以还有一层兜底：**在该仓库里第一次跑任何一关**（比如 `signoff p5 README.md`）会自动把五关装好。
-要放行安装脚本就加 `npm i -g signoff-cli --allow-scripts=dsh-signoff`。
+要放行安装脚本就加 `npm i -g signoff-cli --allow-scripts=signoff-cli`。
 
 行为约定：
 
@@ -111,7 +111,7 @@ npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所�
 
 **绕过的路仍然有，但不再无痕**：`signoff audit --range origin/main..HEAD` 逐个提交核对标记与提交树——缺失就是绕过（`git commit --no-verify`），判红；`SIGNOFF_SKIP=1` 的提交写成 `Signoff-Skip:` 并记进 `.signoff/skips.log`，`--strict` 下同样判红。生成的 CI 里已经带这一步。
 
-**队友为什么也会被守住**：先把 `dsh-signoff` 放进 `devDependencies`（`npm i -D signoff-cli`），再 `signoff init --prepare`，它会把 `signoff init --quiet` 并进 `package.json` 的 `prepare`，队友 `npm install` 完钩子就有了。没这个依赖时 `--prepare` 会拒绝写入并提示——否则 `npm install` 会因为找不到 CLI 直接失败。
+**队友为什么也会被守住**：先把 `signoff-cli` 放进 `devDependencies`（`npm i -D signoff-cli`），再 `signoff init --prepare`，它会把 `signoff init --quiet` 并进 `package.json` 的 `prepare`，队友 `npm install` 完钩子就有了。没这个依赖时 `--prepare` 会拒绝写入并提示——否则 `npm install` 会因为找不到 CLI 直接失败。
 
 ```bash
 signoff init                 # 装钩子 + CI + 配置
@@ -269,7 +269,7 @@ signoff p5 docs README.md
 
 - **CLI**（本体）：`npm i -g signoff-cli`，任何能起进程的地方都能调，退出码即判决。
 - **技能**：`integrations/skill/SKILL.md`，把“退出码是判决、不许绕过、先 doctor 再 explain”教给 agent。
-- **MCP 服务器**：`npx -y dsh-signoff mcp`（或 `integrations/mcp/server.js`），给 Claude Desktop / DSH / IDE 用，五个工具，`isError` 跟随退出码；官方 MCP Registry 条目为 `io.github.ayuanxx-max/signoff`。
+- **MCP 服务器**：`npx -y signoff-cli mcp`（或 `integrations/mcp/server.js`），给 Claude Desktop / DSH / IDE 用，五个工具，`isError` 跟随退出码；官方 MCP Registry 条目为 `io.github.ayuanxx-max/signoff`。
 - **宿主插件**：可行但不推荐（只有要画 UI 时才值得），理由见 [docs/integrations.md](docs/integrations.md)。
 
 推广与可发现性的现状和做法见 [docs/promotion.md](docs/promotion.md)。
@@ -441,7 +441,7 @@ One command, then nothing: `npm i -g signoff-cli` writes a machine-wide `core.ho
 | declaration | a committed `signoff.json` (`signoff init --share`) | every clone: the machine layer sees it and builds all five gates, no local step |
 | gates | every commit | opted-in repos run all five; unopted repos run only P1 (tests), and write no state |
 
-npm 11 may hold `postinstall` behind its script allowlist (`--allow-scripts=dsh-signoff` to allow it), so the
+npm 11 may hold `postinstall` behind its script allowlist (`--allow-scripts=signoff-cli` to allow it), so the
 first gate command in a repo (`signoff p5 README.md`) installs the five gates as a fallback.
 
 Committing `signoff.json` is the repository agreeing to P1-P5: `.signoff/` is gitignored, the declaration is not,
@@ -483,7 +483,7 @@ Three stability measures: the same staged tree is judged once (cache hit ~0 ms, 
 
 **A bypass leaves a trace**: `signoff audit --range origin/main..HEAD` checks every commit's marker against its tree. Missing means the gates were skipped (`git commit --no-verify`) and is red; a `SIGNOFF_SKIP=1` commit carries `Signoff-Skip` and turns red under `--strict`. The generated CI already runs this step.
 
-**Why a teammate ends up guarded too**: with `dsh-signoff` in `devDependencies` (`npm i -D signoff-cli`), `signoff init --prepare` appends `signoff init --quiet` to `package.json`'s `prepare`, so their `npm install` installs the hooks; without it, CI is the backstop.
+**Why a teammate ends up guarded too**: with `signoff-cli` in `devDependencies` (`npm i -D signoff-cli`), `signoff init --prepare` appends `signoff init --quiet` to `package.json`'s `prepare`, so their `npm install` installs the hooks; without it, CI is the backstop.
 
 ### Beyond this fix: other code work
 

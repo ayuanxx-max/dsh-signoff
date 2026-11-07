@@ -10,7 +10,7 @@ gates without shelling out by hand.
   "mcpServers": {
     "signoff": {
       "command": "node",
-      "args": ["E:/path/to/dsh-signoff/integrations/mcp/server.js"]
+      "args": ["E:/path/to/signoff-cli/integrations/mcp/server.js"]
     }
   }
 }

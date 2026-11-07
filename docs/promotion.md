@@ -57,7 +57,7 @@ GitHub 的搜索会索引 description、topics、README 正文；topics 为空�
 curl -s -H "Authorization: token $TOKEN" \
   https://api.github.com/repos/ayuanxx-max/signoff-cli/traffic/views
 # 每周 npm 下载
-curl -s https://api.npmjs.org/downloads/point/last-week/dsh-signoff
+curl -s https://api.npmjs.org/downloads/point/last-week/signoff-cli
 ```
 
 现实预期：这类工具前两周能到 20–50 star 就算不错；单个 awesome-list 收录常带来 10–30 star 的长尾。

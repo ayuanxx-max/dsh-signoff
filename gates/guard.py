@@ -96,10 +96,12 @@ ROOT=$(git rev-parse --show-toplevel) || exit 1
 if command -v signoff >/dev/null 2>&1; then
   exec signoff hook {stage}
 fi
-if [ -f "$ROOT/node_modules/dsh-signoff/bin/signoff.js" ]; then
-  exec node "$ROOT/node_modules/dsh-signoff/bin/signoff.js" hook {stage}
+CLI="$ROOT/node_modules/signoff-cli/bin/signoff.js"
+[ -f "$CLI" ] || CLI="$ROOT/node_modules/dsh-signoff/bin/signoff.js"
+if [ -f "$CLI" ]; then
+  exec node "$CLI" hook {stage}
 fi
-echo "[signoff] CLI not found: npm i -g dsh-signoff (or add it as a devDependency)" >&2
+echo "[signoff] CLI not found: npm i -g signoff-cli (or add it as a devDependency)" >&2
 echo "[signoff] this repo is guarded; install the CLI, or bypass this once with --no-verify" >&2
 exit 1
 """
@@ -117,7 +119,7 @@ jobs:
         with: { node-version: "20" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: npx --yes dsh-signoff@latest guard --ci
+      - run: npx --yes signoff-cli@latest guard --ci
 """
 
 
