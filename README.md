@@ -149,6 +149,17 @@ signoff secrets --all --json # 全仓库扫一遍，一条 JSON 判决
 - **CI 直接标到行**：`GITHUB_ACTIONS=true` 时，密钥/覆盖率发现输出 `::error file=…,line=…` 注解并写步骤摘要，
   PR 页面直接看到，不用翻日志。
 
+### 可核对的凭证（3.15.0 起）
+
+`signoff p4 checkpoint` 给账本签一个检查点，`signoff p4 anchor` 打出一行可以贴到发版说明里的锚点：
+
+```
+signoff1:12:9f2c1ab34d0e:71b0c9d2e4a85f61
+```
+
+事后 `signoff p4 verify --checkpoint --anchor <那一行>` 能分辨四种情况：账本被截断、内容被改、
+签名不属于受信 key、锚点与本机不一致。细节与边界（它不证明什么）见 [docs/trust.md](docs/trust.md)。
+
 ### 规则包、预设与编辑器（3.14.0 起）
 
 - **P5 规则包**：`--pack zh|en|both`。中文词表是默认值，行为不变；`en` 用词边界匹配
@@ -301,6 +312,13 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
   measured", not "passed".
 - Under `GITHUB_ACTIONS=true`, findings become `::error file=...,line=...` annotations plus a step
   summary, so a reviewer sees them on the diff.
+
+### Checkpointed evidence (since 3.15.0)
+
+`signoff p4 checkpoint` signs the ledger head and Merkle root; `signoff p4 anchor`
+prints one line to publish with the release. `signoff p4 verify --checkpoint --anchor`
+then tells truncation, edits, untrusted keys and anchor drift apart. Scope and limits:
+[docs/trust.md](docs/trust.md).
 
 ### Rule packs, presets and editors (since 3.14.0)
 

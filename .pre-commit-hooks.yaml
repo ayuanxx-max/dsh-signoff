@@ -1,0 +1,27 @@
+# pre-commit hooks: https://pre-commit.com
+#   - repo: https://github.com/ayuanxx-max/dsh-signoff
+#     rev: v3.15.0
+#     hooks: [{id: signoff-guard}]
+- id: signoff-guard
+  name: signoff guard (five gates)
+  description: run the gates before the commit; a red gate stops it
+  entry: signoff guard
+  language: node
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: signoff-p5
+  name: signoff text rules
+  description: block AI-slop words and unnumbered claims in documents
+  entry: signoff p5
+  language: node
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: signoff-cov
+  name: signoff changed-line coverage
+  description: require coverage on the lines this change adds
+  entry: signoff cov --diff --allow-missing
+  language: node
+  pass_filenames: false
+  stages: [pre-push]

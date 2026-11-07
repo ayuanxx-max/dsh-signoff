@@ -98,6 +98,10 @@
           }
         }
       }
+    },
+    "checkpoint": {
+      "type": "boolean",
+      "description": "advance a signed ledger checkpoint after every passing run"
     }
   },
   "additionalProperties": false

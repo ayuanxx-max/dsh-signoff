@@ -1,0 +1,24 @@
+name: signoff
+description: Five gates before the commit; a red gate stops it. Prints GitHub annotations.
+author: ayuanxx-max
+branding:
+  icon: shield
+  color: purple
+inputs:
+  args:
+    description: arguments passed to signoff
+    required: false
+    default: all
+  version:
+    description: dsh-signoff version to install
+    required: false
+    default: latest
+runs:
+  using: composite
+  steps:
+    - name: install
+      shell: bash
+      run: npm i -g dsh-signoff@${{ inputs.version }} --no-fund --no-audit
+    - name: signoff
+      shell: bash
+      run: signoff ${{ inputs.args }}

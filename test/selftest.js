@@ -1086,6 +1086,123 @@ function main() {
       fs.mkdirSync(path.join(bareTests, "tests"), { recursive: true });
       fs.writeFileSync(path.join(bareTests, "tests", "data.json"), "{}", "utf8");
       check("detect: a tests/ dir alone is not pytest", p1lib.detectCommands(bareTests).id, null);
+
+      // 13. Signed checkpoints over the P4 ledger.
+      let r;
+      // Seed two records in this run's own ledger before signing a checkpoint.
+      const seedTicket = (run(["p4", "ask", "--action", "config", "--target", "cp"], repo).stdout.match(/ticket (\w+)/) || [])[1];
+      check("p4 seed ticket", typeof seedTicket, "string");
+      run(["p4", "confirm", "--ticket", seedTicket, "--decision", "allow", "--detail", "cp"], repo);
+      const seed2 = (run(["p4", "ask", "--action", "config", "--target", "cp2"], repo).stdout.match(/ticket (\w+)/) || [])[1];
+      run(["p4", "confirm", "--ticket", seed2, "--decision", "allow", "--detail", "cp2"], repo);
+      r = run(["p4", "checkpoint", "--no-sign"], repo);
+      check("p4 checkpoint writes", r.status, 0);
+      r = run(["p4", "verify", "--checkpoint"], repo);
+      check("p4 unsigned checkpoint is not a pass", r.status, 1);
+      r = run(["p4", "verify", "--checkpoint", "--allow-unsigned"], repo);
+      check("p4 --allow-unsigned", r.status, 0);
+      r = run(["p4", "checkpoint"], repo);
+      check("p4 checkpoint signs", r.status, 0);
+      let cpv = JSON.parse(run(["p4", "verify", "--checkpoint", "--json"], repo).stdout);
+      check("p4 checkpoint verifies", cpv.ok, true, cpv.state);
+      check("p4 checkpoint covers records", cpv.seq > 0, true, String(cpv.seq));
+      check("p4 checkpoint is self-signed", cpv.state, "self-signed");
+      const cpAnchor = run(["p4", "anchor"], repo).stdout.trim();
+      check("p4 anchor format", /^signoff1:\d+:[0-9a-f]{12}:[0-9a-f]{16}$/.test(cpAnchor), true, cpAnchor);
+      check("p4 anchor matches checkpoint", cpAnchor, JSON.parse(run(["p4", "checkpoint", "--json"], repo).stdout.trim()).anchor);
+      r = run(["p4", "verify", "--checkpoint", "--anchor", "signoff1:9:000000000000:0000000000000000"], repo);
+      check("p4 wrong anchor is red", r.status, 1);
+
+      // Trusted key in allowed_signers flips self-signed -> verified.
+      const cp = JSON.parse(fs.readFileSync(JSON.parse(run(["p4", "path", "--json"], repo).stdout).checkpoint, "utf8"));
+      fs.mkdirSync(path.join(repo, ".signoff"), { recursive: true });
+      fs.writeFileSync(path.join(repo, ".signoff", "allowed_signers"), cp.key + "\n", "utf8");
+      cpv = JSON.parse(run(["p4", "verify", "--checkpoint", "--json"], repo).stdout);
+      check("p4 checkpoint becomes verified", cpv.state, "verified");
+
+      // Truncating the ledger is the attack a plain hash chain cannot see.
+      const where = JSON.parse(run(["p4", "path", "--json"], repo).stdout);
+      check("p4 path names the ledger", fs.existsSync(where.ledger), true, where.ledger);
+      check("p4 path names the checkpoint", where.checkpoint.endsWith("checkpoint.json"), true);
+      const ledgerFile = where.ledger;
+      const ledgerText = fs.readFileSync(ledgerFile, "utf8");
+      const keep = ledgerText.trim().split(/\r?\n/).slice(0, -1).join("\n") + "\n";
+      fs.writeFileSync(ledgerFile, keep, "utf8");
+      r = run(["p4", "verify", "--checkpoint"], repo);
+      check("p4 truncation is red", r.status, 1, r.stdout.includes("records were removed") ? "named" : r.stdout.slice(0, 60));
+      fs.writeFileSync(ledgerFile, ledgerText, "utf8");
+
+      // 14. A repo that checkpoints keeps checkpointing on every pass.
+      const before = JSON.parse(run(["p4", "verify", "--checkpoint", "--json"], repo).stdout).seq;
+      const prevHome = process.env.SIGNOFF_HOME;
+      process.env.SIGNOFF_HOME = HOME;
+      const guarded = require("../lib/guard").maybeCheckpoint(repo);
+      if (prevHome === undefined) delete process.env.SIGNOFF_HOME;
+      else process.env.SIGNOFF_HOME = prevHome;
+      check("guard keeps a valid checkpoint", guarded && guarded.ok, true, guarded && (guarded.error || ""));
+      check("guard does not churn an unchanged ledger", guarded && guarded.seq, before);
+      check("guard checkpoint keeps verifying", run(["p4", "verify", "--checkpoint"], repo).status, 0);
+
+      // 15. Distribution manifests exist and name the right entry points.
+      const hooks = fs.readFileSync(path.join(__dirname, "..", ".pre-commit-hooks.yaml"), "utf8");
+      check("pre-commit hook id", /id: signoff-guard/.test(hooks), true);
+      check("pre-commit hook entry", /entry: signoff guard/.test(hooks), true);
+      const action = fs.readFileSync(path.join(__dirname, "..", "action.yml"), "utf8");
+      check("action installs the cli", /npm i -g dsh-signoff/.test(action), true);
+      check("action runs signoff", /run: signoff \$\{\{ inputs.args \}\}/.test(action), true);
+      check("integrations doc lists actions", /uses: ayuanxx-max\/dsh-signoff/.test(fs.readFileSync(path.join(__dirname, "..", "docs", "integrations.md"), "utf8")), true);
+
+      // 16. Deterministic fuzz: parsers must never throw on hostile input, and the
+      // hashing primitives must be stable and order-sensitive.
+      const covlib = require("../lib/cov");
+      const p5lib2 = require("../lib/p5");
+      const cplib = require("../lib/checkpoint");
+      const secretslib = require("../lib/secrets");
+      let seed = 0x51f15e;
+      const rnd = () => {
+        seed = (seed * 1664525 + 1013904223) >>> 0;
+        return seed / 0x100000000;
+      };
+      const pick = (alphabet, n) => Array.from({ length: n }, () => alphabet[Math.floor(rnd() * alphabet.length)]).join("");
+      let crashes = 0;
+      for (let i = 0; i < 120; i++) {
+        const junk = pick("\n\r\t %$#{}[]\"'\\;:=<>0aF中é😀", Math.floor(rnd() * 200));
+        try {
+          const r = covlib.fromLcov(junk);
+          // fromLcov returns a per-file map; only a summary carrying pct is range-checked.
+          if (!r || typeof r !== "object") crashes += 1000;
+          else if (typeof r.pct === "number" && (r.pct < 0 || r.pct > 100)) crashes += 1000;
+        } catch (e) {
+          crashes += 1;
+        }
+        try {
+          p5lib2.scan(junk);
+          secretslib.scan(junk);
+        } catch (e) {
+          crashes += 1;
+        }
+        try {
+          const a = [junk, pick("abc", 3), "x"];
+          const r1 = cplib.merkleRoot(a);
+          const r2 = cplib.merkleRoot(a);
+          if (r1 !== r2 || !/^[0-9a-f]{64}$/.test(r1)) crashes += 1000;
+          if (cplib.merkleRoot([a[1], a[0], a[2]]) === r1 && a[0] !== a[1]) crashes += 100;
+        } catch (e) {
+          crashes += 1;
+        }
+      }
+      check("parsers survive 120 hostile inputs", crashes, 0);
+      check("merkle root is order sensitive", cplib.merkleRoot(["a", "b"]) === cplib.merkleRoot(["b", "a"]), false);
+      const p4lib = require("../lib/p4");
+      check("digest is stable", p4lib.digest("genesis", { a: 1, b: "x" }), p4lib.digest("genesis", { b: "x", a: 1 }));
+      check("digest binds the predecessor", p4lib.digest("genesis", { a: 1 }) === p4lib.digest("other", { a: 1 }), false);
+      r = run(["p4", "verify", "--checkpoint"], repo);
+      check("p4 ledger restored", r.status, 0);
+
+      // A BOM from a Windows editor must not look like corruption.
+      fs.writeFileSync(ledgerFile, "\uFEFF" + ledgerText, "utf8");
+      check("p4 tolerates a BOM", run(["p4", "verify"], repo).status, 0);
+      fs.writeFileSync(ledgerFile, ledgerText, "utf8");
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }

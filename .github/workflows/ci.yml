@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [18, 20, 22]
+        node: [20, 22, 24]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -67,5 +67,31 @@ jobs:
           signoff doctor
           echo two > b.txt && git add . && git commit -qm "after guard"
           signoff audit --since-install
+          signoff p4 checkpoint --no-sign
+          signoff p4 verify --checkpoint --allow-unsigned
+          signoff p4 path --json
           signoff doctor --json > doctor.json
           node -e "const d=require('/tmp/guarded/doctor.json'); if(!d.ok||d.fails) process.exit(1); console.log('doctor ok,', d.checks.length, 'checks')"
+
+  arm:
+    name: linux arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node test/selftest.js
+
+  container:
+    name: container (node:22-slim, no host tools)
+    runs-on: ubuntu-latest
+    container: node:22-slim
+    steps:
+      - uses: actions/checkout@v4
+      - name: self-test without a host git identity
+        run: |
+          apt-get update -qq && apt-get install -y -qq git openssh-client > /dev/null
+          git config --global user.name ci
+          git config --global user.email ci@example.com
+          node test/selftest.js

@@ -1,3 +1,17 @@
+## 3.15.0
+
+**加了"可核对外部"的那一层：签名检查点 + 锚点。**
+
+- `signoff p4 checkpoint`：把账本第 N 条的 `head` 与 Merkle `root` 签成一个文件；
+  `signoff p4 anchor` 打出一行 `signoff1:<seq>:<head12>:<root16>` 供发布。
+- `signoff p4 verify --checkpoint [--anchor LINE]`：账本被截断、被改写、签名不属于
+  `allowed_signers`、锚点对不上，各自给出不同的失败原因。
+- `signoff p4 path`：打印账本与检查点的实际位置（脚本用）。
+- guard 通过后自动续签检查点（同一份账本不重复签），所以"用起来"不需要多一条命令。
+- 账本读取容忍 BOM（Windows 编辑器与 `Set-Content -Encoding utf8` 常见）。
+- 分发面：`.pre-commit-hooks.yaml`（3 个 hook）、`action.yml`（复合 Action）、`docs/integrations.md`。
+- 测试 290 条：新增 17 条检查点断言、5 条分发清单断言、4 条确定性 fuzz 断言。
+
 ## 3.14.1
 
 **修：`tests/` 目录不再抢走 `package.json` 的 `test` 脚本。**
