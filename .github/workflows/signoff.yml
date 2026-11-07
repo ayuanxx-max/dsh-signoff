@@ -28,3 +28,5 @@ jobs:
           else
             echo "no base commit in this clone; skipping the trailer audit"
           fi
+      - name: release gate (artifact)
+        run: npx --yes --package=signoff-cli@latest signoff release --pre
