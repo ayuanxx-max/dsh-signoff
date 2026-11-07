@@ -32,10 +32,14 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff doctor [--fix]                     show what is present; --fix repairs what it can prove
 
   signoff init [--no-ci] [--prepare] [--quiet]  install hooks + CI so the gates run themselves
+  signoff init --chain | --lock-test | --reset-install   keep existing hooks / pin the
+                                             detected runner / move the install point to HEAD
   signoff guard [--full]                     run the gate set the hooks use (right now)
   signoff status                             is this repo guarded?
 signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
+  signoff audit --since-install             only commits after the install point (refuses
+                                             a point that is not an ancestor of HEAD)
   signoff uninstall [--keep-config] [--all]  remove hooks + CI workflow
 
 Requires Node >= 18 only; no Python. Options common to every gate: --json, -h.

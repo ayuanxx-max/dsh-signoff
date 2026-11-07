@@ -92,7 +92,13 @@ After `signoff init`, `pre-commit` / `pre-push` / CI all call `signoff guard`:
 
 A chained (`--chain`) hook keeps its language: `.py`/`.js`/`.ps1`/`.cmd` suffixes pick the interpreter, and the plain `.local` name still runs first (3.9.0).
 
+Since 3.9.1 the lock is a directory holding `owner.json`, taken with `mkdir` (atomic on SMB/NFS, unlike O_EXCL create); a 3.9.0 lock file is still recognised.
+
 Since 3.8.0 one hook run at a time holds `.signoff/lock`; a live holder makes the second run exit 1 with the holder's pid, and a lock from a dead pid or older than 10 minutes is broken.
+
+## Audit boundary
+
+`audit --since-install` first checks that the install point is an ancestor of HEAD. After a rebase, a force-push or a fresh clone it is not, so the command exits 2 instead of reporting a window that covers the wrong commits; `signoff init --reset-install` moves the boundary to HEAD.
 
 ## Runtime (3.0.0 and later)
 

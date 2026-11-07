@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.9.1 — 2026-11-06
+
+- 修 `audit --since-install` 会在安装点不是 HEAD 祖先时静默给出偏大范围：现在先 `git cat-file -e <sha>^{commit}` + `git merge-base --is-ancestor`，对不上退 2 并说明原因（rebase / 强推 / 换了克隆），提示改用 `signoff init --reset-install` 或 `--range`。审计结论不可信比审计报错更糟。
+- 新增 `signoff init --reset-install`：把安装点重写为当前 HEAD（历史被改写后唯一的正确修法）。
+- 新增 `signoff init --lock-test`：把识别到的测试命令写进 `test_cmd`，换机器不再从 vitest 漂到 pytest。
+- 钩子锁从 `open(..., "wx")` 改为 `mkdir` + `owner.json`：`mkdir` 在 SMB/NFS 上仍是原子的，`O_EXCL` 不是；3.9.0 写的文件形状继续被识别，旧锁不会卡住新版本。
+- 自查 164 项、Python 对等 30 项全过。
+
 ## 3.9.0 — 2026-11-06
 
 - 修 `--chain` 在 Windows 上跑不了非 shell 钩子：串接文件保留 `.py`/`.js`/`.ps1`/`.cmd` 后缀，生成的钩子按后缀用 `python`/`node`/`powershell`/`cmd` 启动，`.local` 仍排第一（3.9.0 之前装的仓库不受影响）；`uninstall` 按同一顺序找回并还原。

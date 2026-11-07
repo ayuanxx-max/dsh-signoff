@@ -377,6 +377,46 @@ function main() {
     r = u(["doctor", "--fix"]);
     check("doctor --fix is idempotent", /nothing to repair/.test(r.stdout) ? 1 : 0, 1, (r.stdout || "").trim());
 
+    // audit refuses an install point that is not an ancestor of HEAD, and --reset-install fixes it
+    const uipath = path.join(urepo, ".signoff", "installed.json");
+    fs.writeFileSync(uipath, JSON.stringify({ sha: "0".repeat(40), ts: new Date().toISOString(), version: "3.9.0" }), "utf8");
+    r = u(["audit", "--since-install"]);
+    check("audit refuses a foreign install point", r.status, 2, (r.stderr || "").trim());
+    check("audit says why", /not an ancestor of HEAD/.test(r.stderr) ? 1 : 0, 1);
+    r = u(["init", "--reset-install", "--no-ci", "--no-push", "--quiet"]);
+    const fixedPoint = JSON.parse(fs.readFileSync(uipath, "utf8"));
+    check("init --reset-install records HEAD", fixedPoint.sha, gitOut(["rev-parse", "HEAD"], urepo).trim());
+    r = u(["audit", "--since-install"]);
+    check("audit works after the reset", r.status, 0, (r.stderr || "").trim());
+
+    // init --lock-test pins what detection found, so another machine cannot switch runners
+    const prepo = path.join(base, "pin-repo");
+    const phome = path.join(base, "pin-home");
+    fs.mkdirSync(prepo, { recursive: true });
+    gitOut(["init", "-q", "."], prepo);
+    fs.writeFileSync(
+      path.join(prepo, "package.json"),
+      JSON.stringify({ name: "pin", devDependencies: { vitest: "^1.0.0" } }, null, 2),
+      "utf8"
+    );
+    fs.writeFileSync(path.join(prepo, "a.txt"), "a", "utf8");
+    gitOut(["add", "."], prepo);
+    const pin = (args) => run(args, prepo, { SIGNOFF_HOME: phome });
+    r = pin(["init", "--lock-test", "--no-ci", "--no-push"]);
+    const pinned = JSON.parse(fs.readFileSync(path.join(prepo, ".signoff", "config.json"), "utf8"));
+    check("init --lock-test pins the runner", pinned.test_cmd, "npx --no-install vitest run");
+    check("init --lock-test says what it locked", /locked\s+npx --no-install vitest run/.test(r.stdout) ? 1 : 0, 1, (r.stdout || "").trim());
+
+    // the lock directory shape blocks too, and a dead owner breaks it
+    const dlk = path.join(urepo, ".signoff", "lock");
+    fs.mkdirSync(dlk, { recursive: true });
+    fs.writeFileSync(path.join(dlk, "owner.json"), JSON.stringify({ pid: process.pid, stage: "pre-commit", ts: new Date().toISOString() }), "utf8");
+    r = u(["hook", "pre-commit"], { SIGNOFF_LOCK_WAIT_MS: "0" });
+    check("directory lock blocks", r.status, 1, (r.stderr || "").trim());
+    fs.writeFileSync(path.join(dlk, "owner.json"), JSON.stringify({ pid: 999999, stage: "pre-commit", ts: new Date().toISOString() }), "utf8");
+    u(["hook", "pre-commit"], { SIGNOFF_LOCK_WAIT_MS: "0" });
+    check("dead owner breaks the directory lock", fs.existsSync(dlk) ? 0 : 1, 1);
+
     // p4 export --merge: another repo's ledger joins the table, tampering is reported
     const lrepo = path.join(base, "ledger-repo");
     const lhome = path.join(base, "ledger-home");

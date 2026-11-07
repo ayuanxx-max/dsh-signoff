@@ -81,4 +81,8 @@
 
 ## 运行环境（3.0.0 起）
 
+## 审计边界
+
+`audit --since-install` 先确认安装点是 HEAD 的祖先；rebase、强推、换克隆后对不上会退 2，用 `signoff init --reset-install` 把边界挪到当前 HEAD。
+
 五关与守卫都是 Node 实现（`lib/p1..p5.js`、`lib/guard.js`），只需要 Node 18+；不再依赖 Python，也没有降级模式。`gates/*.py` 仅作为对拍参考（`npm run parity`）。
