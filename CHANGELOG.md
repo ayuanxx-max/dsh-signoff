@@ -1,3 +1,10 @@
+## 4.1.1
+
+**修注册表归属校验：`package.json` 的 `mcpName` 还指向旧仓库名。**
+
+- 现象：注册表返回 400 `Expected mcpName 'io.github.ayuanxx-max/signoff-cli', got 'io.github.ayuanxx-max/signoff'`。
+- 修法：`mcpName` 跟随仓库改名；自测新增一条断言，`server.json#name` 与 `package.json#mcpName` 不一致即红。
+
 ## 4.1.0
 
 **仓库改名为 `ayuanxx-max/signoff-cli`，与 npm 包名对齐。**
