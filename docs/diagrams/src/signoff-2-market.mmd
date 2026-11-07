@@ -1,0 +1,45 @@
+---
+title: SignOff 已发布社区与市场分布（2026-11-06）
+---
+flowchart TB
+  H["dsh-signoff · SignOff / 落印<br/>v3.9.4 npm latest · 25 条账本 · 164+30 自查 · 11 topics"]
+
+  subgraph LIVE["已上线 · 可被搜索 / 安装"]
+    direction LR
+    M1["npm registry<br/>唯一安装入口"]
+    M2["GitHub 仓库 + Releases<br/>v3.9.4 双语说明"]
+    M3["官方 MCP Registry<br/>io.github.ayuanxx-max/signoff@3.9.4"]
+    M4["OpenViking 文档库<br/>发布记录与方案快照"]
+  end
+
+  subgraph PEND["已提交 · 等对方审核"]
+    direction LR
+    M5["awesome-mcp-servers<br/>PR #18813 · Developer Tools"]
+    M6["Glama 徽章<br/>索引后自动出分"]
+  end
+
+  subgraph READY["物料已备 · 未提交"]
+    direction LR
+    M7["Smithery<br/>smithery.yaml 就绪，需 OAuth"]
+    M8["mcp.so · PulseMCP<br/>拉官方 registry，通常自动"]
+    M9["ClawHub 技能市场<br/>SKILL.md 就绪"]
+    M10["其余 awesome-* 清单<br/>git-hooks · pre-commit · ai-agents"]
+  end
+
+  N["记住：Registry 是索引，不是流量<br/>带来访问量的是人工清单与被引用"]
+
+  H --> LIVE
+  H -.-> PEND
+  H -.-> READY
+  M3 -.-> N
+
+  classDef hub fill:#0f172a,stroke:#0f172a,color:#ffffff
+  classDef live fill:#dcfce7,stroke:#0e9f6e,stroke-width:1.4px,color:#14532d
+  classDef pend fill:#fef3c7,stroke:#d97706,stroke-width:1.4px,color:#7c2d12
+  classDef ready fill:#f1f5f9,stroke:#94a3b8,stroke-width:1.2px,color:#334155
+  classDef note fill:#ffffff,stroke:#0f172a,stroke-dasharray:4 3,color:#0f172a
+  class H hub
+  class M1,M2,M3,M4 live
+  class M5,M6 pend
+  class M7,M8,M9,M10 ready
+  class N note

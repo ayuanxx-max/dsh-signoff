@@ -1,0 +1,65 @@
+---
+title: SignOff 能力与关系图（v3.9.4）
+---
+flowchart LR
+  subgraph E["① 入口层 · 谁在调用"]
+    direction TB
+    A1["CLI<br/>run · p1..p5 · init · status · doctor · audit · explain · mcp"]
+    A2["Git 钩子<br/>pre-commit · commit-msg · pre-push<br/>已有钩子可链式为 .local"]
+    A3["CI<br/>signoff.yml · fetch-depth 0"]
+    A4["Agent 面<br/>MCP 5 工具 · 技能 SKILL.md"]
+  end
+
+  D["guard.js 分发器<br/>选关 · 取锁 · 收集结果 · 决定退出码<br/>0 通过 / 1 判红 / 2 用法环境"]
+
+  subgraph G["② 五关并列 · 任一判红则退出码为 1，没有部分通过"]
+    direction TB
+    P5["P5 反空话<br/>占位符 · 无证据结论"]
+    P4["P4 账本<br/>哈希链断裂 · 回滚点消失"]
+    P3["P3 队列<br/>card.json 状态不是 done"]
+    P2["P2 覆盖<br/>场景数 / 断言数低于阈值"]
+    P1["P1 测试<br/>测试命令退出码非 0"]
+  end
+
+
+  subgraph K["③ 内核配套"]
+    direction TB
+    C["core.js 共享底座<br/>配置 · .signoff/ · --json · 退出码"]
+    L["锁 .signoff/lock/ + owner.json<br/>陈旧 = 进程死 或 超过 10 分钟"]
+  end
+
+  subgraph DT["④ 数据层 · 留在仓库里的东西"]
+    direction TB
+    S1["config.json<br/>阈值 · test_cmd"]
+    S2["installed.json<br/>安装点 sha"]
+    S3["passed<br/>tree + mode + ts"]
+    S4["audit.log<br/>只追加哈希链"]
+    S5["p3.json / skips<br/>SIGNOFF_SKIP 留痕"]
+  end
+
+  subgraph X["⑤ 外部依赖 · 只有两样是硬要求"]
+    direction TB
+    X1["Node ≥ 18"]
+    X2["git"]
+    X3["测试运行器"]
+    X4["Python · 仅对等测试"]
+    X5["GitHub Actions · 可选"]
+  end
+
+  E --> D
+  D --> G
+  D -.-> K
+  G --> DT
+  K --> DT
+  DT -->|审计依赖 git 历史| X
+
+  classDef entry fill:#eef3fb,stroke:#2f6fdd,stroke-width:1.4px,color:#0f2d5c
+  classDef gate fill:#e8f7f0,stroke:#0e9f6e,stroke-width:1.4px,color:#0b4a33
+  classDef core fill:#fdf3e7,stroke:#b45309,stroke-width:1.4px,color:#5c2c05
+  classDef data fill:#f3ecfd,stroke:#7c3aed,stroke-width:1.4px,color:#3d1e6b
+  classDef ext fill:#f4f5f7,stroke:#6b7280,stroke-width:1.2px,color:#374151
+  class A1,A2,A3,A4 entry
+  class P1,P2,P3,P4,P5 gate
+  class D,C,L core
+  class S1,S2,S3,S4,S5 data
+  class X1,X2,X3,X4,X5 ext

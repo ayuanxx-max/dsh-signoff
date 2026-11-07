@@ -1,0 +1,42 @@
+mindmap
+  root((SignOff 用户视角))
+    安装
+      npm i -g dsh-signoff
+      npx dsh-signoff 免安装试用
+      硬要求只有 Node 18 以上 与 git
+      公司网络下 npx 可能被代理挡
+    初始化
+      signoff init
+      --chain 保留已有钩子并先跑它
+      --lock-test 固定本机识别到的测试命令
+      --dry-run 先看会写什么
+      --no-ci 不动 CI
+    日常
+      git commit 自动跑五关
+      红了按提示修，不绕过
+      doctor 查为什么没生效
+      explain p2 查这一关怎么判
+      audit --since-install 查谁真的过了
+    排错顺序
+      doctor
+      doctor --fix 修能证明的问题
+      explain gate 之后再改配置
+    平台差异
+      Windows 用 ps1 或 cmd 启动器
+      Windows 执行位不生效，控制台 GBK 会显示乱码
+      macOS 与 Linux 钩子必须有执行位
+      容器与 CI 常没有 git 身份
+      SMB 与 NFS 的原子性无法被证明，锁是尽力而为
+    环境差异
+      浅克隆会让审计判红
+      CI 必须 fetch-depth 0
+      monorepo 子包各自 init 会出现两套钩子
+      没有测试的仓库如实报未识别，不假装通过
+      除 npx 取包外不联网，闸门离线可用
+    已知坑
+      commit 没跑闸门，用 init --chain
+      P1 卡住或选错命令，用 init --lock-test
+      audit 报 not an ancestor，用 init --reset-install
+      锁等待超时，调 SIGNOFF_LOCK_WAIT_MS 或删 .signoff/lock
+      P4 在 CI 判红，检查 workflow 的 fetch-depth 0
+      P5 误报，改写措辞而不是改词表
