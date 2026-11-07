@@ -1,0 +1,94 @@
+---
+title: "User path: install, use, troubleshoot (0 → 5 is the order)"
+---
+flowchart TB
+  subgraph ROW1["User path · strictly 0 → 5; red = must do, amber = the places people trip on"]
+    direction LR
+    subgraph T0["0 · Precheck"]
+      direction TB
+      T0a["node -v ≥ 18<br/>git --version works"]
+      T0b["run at the repo root<br/>(where .git lives)"]
+      T0c["Windows / macOS / Linux all fine"]
+    end
+    subgraph T1["1 · Install"]
+      direction TB
+      T1a["npm i -g dsh-signoff"]
+      T1b["no global install: npx dsh-signoff p1 once"]
+      T1c["behind a corporate proxy set npm proxy<br/>or npx cannot fetch the package"]
+    end
+    subgraph T2["2 · Init"]
+      direction TB
+      T2a["signoff init"]
+      T2b["repo already has husky hooks: add --chain<br/>otherwise yours get replaced"]
+      T2c["test command differs per machine: --lock-test"]
+      T2d["see what it will write: --dry-run"]
+      T2e["leave CI alone: --no-ci"]
+    end
+    subgraph T3["3 · Daily commits"]
+      direction TB
+      T3a["git commit<br/>pre-commit runs the five gates"]
+      T3b["marker and trailer written only when all five pass"]
+      T3c["status: what got installed<br/>doctor: why it does nothing"]
+      T3d["explain p2: how this gate decides"]
+      T3e["audit --since-install: who really passed"]
+    end
+    subgraph T4["4 · Red? check in this order"]
+      direction TB
+      T4a["doctor: are the hooks running at all"]
+      T4b["not running → init --chain"]
+      T4c["tests really fail → fix code, not thresholds"]
+      T4d["coverage short → add assertions, or --strict for the stricter verdict"]
+      T4e["queue incomplete → finish the card"]
+      T4f["ledger broken / trailer missing → p4 ask/confirm or roll back"]
+      T4g["P5 false positive → rewrite the wording, not the word list"]
+    end
+    subgraph T5["5 · Upgrade and uninstall"]
+      direction TB
+      T5a["upgrade: npm i -g dsh-signoff@latest<br/>then signoff init to refresh the hooks"]
+      T5b["uninstall default: remove hooks, keep config"]
+      T5c["--keep-config / --all: two more thorough levels"]
+    end
+    T0 --> T1 --> T2 --> T3 --> T4 --> T5
+  end
+
+  subgraph ROW2["The three real-world dimensions · they do not change your flow, they change what you see"]
+    direction LR
+    subgraph PL["Platform differences"]
+      direction TB
+      PL1["Windows: hooks launch through .ps1 / .cmd<br/>exec bit irrelevant; a GBK console mangles Chinese output"]
+      PL2["macOS / Linux: hooks need the exec bit<br/>init sets it, doctor --fix repairs it"]
+      PL3["containers / CI: often no user.name or user.email<br/>the commit fails and it is unrelated to the gates"]
+      PL4["SMB / NFS: lock atomicity cannot be proven<br/>mkdir beats O_EXCL, still best effort"]
+    end
+    subgraph EN["Environment differences"]
+      direction TB
+      EN1["Node 18 / 20 / 22 / 26 all tested in CI"]
+      EN2["shallow clone: audit baseline unreachable → red<br/>CI needs fetch-depth 0"]
+      EN3["monorepo: the repo root is the unit<br/>per-package init creates two hook sets"]
+      EN4["repo without tests: reports 'no test command detected'<br/>it never fakes a pass"]
+      EN5["works offline: the gates never touch the network<br/>only npx needs it"]
+    end
+    subgraph RED["Red lines · do not"]
+      direction TB
+      RD1["--no-verify → the audit shows missing"]
+      RD2["SIGNOFF_SKIP=1 → the marker records skip"]
+      RD3["loosening thresholds to turn red green = deleting the evidence"]
+    end
+  end
+
+  PL ~~~ EN ~~~ RED
+
+  ROW1 -->|same verdicts, different symptoms| ROW2
+
+  classDef stage fill:#eef3fb,stroke:#2f6fdd,stroke-width:1.6px,color:#0f2d5c
+  classDef must fill:#fee2e2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
+  classDef step fill:#fbfcfe,stroke:#9aa4b2,stroke-width:1.1px,color:#1f2937
+  classDef warn fill:#fef3c7,stroke:#d97706,stroke-width:1.2px,color:#7c2d12
+  classDef env fill:#eef2ff,stroke:#4f46e5,stroke-width:1.1px,color:#312e81
+  classDef bad fill:#fee2e2,stroke:#b91c1c,stroke-width:1.3px,color:#7f1d1d
+  class T0a,T1a,T2a,T3a,T3b stage
+  class T1c,T2b,T2c,T4a,T4b,T4c must
+  class T0b,T0c,T1b,T2d,T2e,T3c,T3d,T3e,T4d,T4e,T4f,T4g,T5a,T5b,T5c step
+  class PL1,PL2,PL3,PL4 warn
+  class EN1,EN2,EN3,EN4,EN5 env
+  class RD1,RD2,RD3 bad

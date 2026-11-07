@@ -1,3 +1,11 @@
+## 3.9.7（2026-11-07）
+
+- 图表：三张框架图补齐**英文版**（`signoff-1-capability-en` / `signoff-2-market-en` / `signoff-3-user-en`），
+  与中文版同结构、同配色、同源目录，`diagram.py` 一次渲染六张。
+- 文档：README 增补 `### At a glance (English)`，英文读者不必先读中文；`docs/diagrams/README.md`
+  列出中英对照表。
+- 一致性：中文图 1 标题版本号同步到 3.9.7。
+
 ## 3.9.6（2026-11-07）
 
 - 与 3.9.5 内容相同：3.9.5 因 npm 侧 staged 占用未能公开，改以 3.9.6 发布。

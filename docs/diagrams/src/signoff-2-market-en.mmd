@@ -1,0 +1,72 @@
+---
+title: SignOff publishing and market distribution (2026-11-07)
+---
+flowchart LR
+  subgraph SRC["⓪ Single source of truth · everything else is a projection"]
+    direction TB
+    R1["GitHub master<br/>source · hook templates · CI · docs"]
+    R2["npm tarball dsh-signoff@3.9.7<br/>package.json carries mcpName"]
+    R3["server.json + smithery.yaml<br/>raw material for listings"]
+    R4["docs/diagrams/src/*.mmd<br/>the diagrams are sources too"]
+    R1 ~~~ R2 ~~~ R3 ~~~ R4
+  end
+
+  subgraph PUB["① Publish channels · where content is actually downloadable"]
+    direction TB
+    C1["npm registry<br/>dsh-signoff · latest 3.9.7<br/>the only install path"]
+    C2["GitHub Releases<br/>v3.9.7 bilingual notes + tgz"]
+    C3["Official MCP Registry<br/>io.github.ayuanxx-max/signoff@3.9.7<br/>mcpName verified"]
+    C4["OpenViking docs<br/>viking://resources/dsh/signoff-*"]
+    C1 ~~~ C2 ~~~ C3 ~~~ C4
+  end
+
+  subgraph IDX["② Indexes and lists · whether anyone can find you"]
+    direction TB
+    subgraph IDXP["submitted / happens automatically"]
+      direction TB
+      I1["awesome-mcp-servers · PR #18813<br/>Developer Tools · human review 1–3 days"]
+      I2["Glama · auto-indexes the repo and scores it<br/>the listing carries its badge"]
+      I1 ~~~ I2
+    end
+    subgraph IDXR["not submitted yet · material ready"]
+      direction TB
+      I3["Smithery · smithery.yaml ready<br/>needs GitHub OAuth on the web"]
+      I4["mcp.so · PulseMCP<br/>mostly pull the official registry, usually automatic"]
+      I5["ClawHub skills market<br/>skill written, not published"]
+      I6["other awesome-* lists<br/>git-hooks / pre-commit / ai-agents"]
+      I3 ~~~ I4 ~~~ I5 ~~~ I6
+    end
+  end
+
+  subgraph SEE["③ Discovery · where users actually come from"]
+    direction TB
+    V1["GitHub search and topics<br/>11 topics set"]
+    V2["click from a curated list"]
+    V3["word of mouth / posts / comparisons"]
+    V4["npm search: dsh-signoff"]
+    V1 ~~~ V2 ~~~ V3 ~~~ V4
+  end
+
+  N1["Key distinction: registry and lists are indexes, they generate no traffic<br/>traffic comes from curated lists, citations and search hits"]
+  N2["Progress: channels 4/4 done<br/>indexes = 1 in review + 1 automatic + 1 submittable + 1 synced + 2 not submitted"]
+
+  SRC -->|publish| PUB
+  PUB -->|register as discoverable| IDX
+  IDX -->|someone sees it| SEE
+  C3 -.->|downstream sync| I4
+  C2 -.->|auto-indexed| I2
+  IDX -.-> N1
+  IDX -.-> N2
+
+  classDef src fill:#0f172a,stroke:#0f172a,color:#ffffff
+  classDef pub fill:#dcfce7,stroke:#0e9f6e,stroke-width:1.4px,color:#14532d
+  classDef pending fill:#fef3c7,stroke:#d97706,stroke-width:1.4px,color:#7c2d12
+  classDef todo fill:#f1f5f9,stroke:#94a3b8,stroke-width:1.2px,color:#334155
+  classDef see fill:#eef2ff,stroke:#4f46e5,stroke-width:1.3px,color:#312e81
+  classDef note fill:#ffffff,stroke:#0f172a,stroke-dasharray:4 3,color:#0f172a
+  class R1,R2,R3,R4 src
+  class C1,C2,C3,C4 pub
+  class I1,I2 pending
+  class I3,I4,I5,I6 todo
+  class V1,V2,V3,V4 see
+  class N1,N2 note

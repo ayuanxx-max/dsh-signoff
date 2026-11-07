@@ -40,6 +40,25 @@ signoff all               # p1 + p2 + p5 + p4 verify
 两张图都由 Mermaid 生成，源文件在 [`docs/diagrams/src/`](docs/diagrams/src/)，改文案重渲一次即可，
 不用重画。
 
+### At a glance (English)
+
+![SignOff capabilities and relations](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-1-capability-en.png)
+
+Six layers, left to right: **entry** (CLI / git hooks / CI / agents) all go through one `guard.js`; **dispatcher**
+decides which gates run and what counts as pass; **the five gates** each state read → decide → fix; **the state
+machine** shows how the marker and the trailer appear inside a single commit; **artifacts** are the evidence a
+verdict leaves behind; **external dependencies** — only Node ≥18 and git are hard requirements.
+There is no partial pass: exit 0 pass, 1 any gate red, 2 usage or environment error.
+
+![User path: install, use, troubleshoot](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-3-user-en.png)
+
+Stages 0 → 5 in order: precheck → install → init → daily commits → when it goes red → upgrade and uninstall.
+Red boxes are must-do; amber boxes are the places people trip on (`--chain` when the repo already has husky
+hooks, `--lock-test` when the test command differs per machine, a corporate npm proxy).
+The lower half covers the three dimensions that change what you see without changing the flow: platform
+differences, environment differences, and three red lines (`--no-verify`, `SIGNOFF_SKIP=1`, loosening
+thresholds to turn red green).
+
 ## 一、案例：本次 DSH 2.0.22-next升级后在修复（dsh-session-fork-tree 0.9.34）bug里，五关各自做了什么？
 
 这次修的是“升级 DSH 后，点侧栏「···」菜单，菜单闪一下就消失”。五关实际起了什么作用，逐条列出，包括没发挥作用的那一关。

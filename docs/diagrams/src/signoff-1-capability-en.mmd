@@ -1,0 +1,81 @@
+---
+title: SignOff capabilities and relations (v3.9.7)
+---
+flowchart LR
+  subgraph L1["① Entry · who calls it"]
+    direction TB
+    A1["CLI<br/>run · p1..p5 · init · status · doctor<br/>audit · explain · mcp · uninstall<br/>--json · --strict · --dry-run · --chain"]
+    A2["Git hooks<br/>pre-commit runs the gates<br/>commit-msg checks the trailer<br/>pre-push checks the audit window<br/>existing hooks chained as .local"]
+    A3["CI · signoff.yml<br/>same gates, second run<br/>fetch-depth 0 required for audit"]
+    A4["Agents<br/>5 MCP tools · one skill<br/>isError mirrors the exit code"]
+    A1 ~~~ A2 ~~~ A3 ~~~ A4
+  end
+
+  subgraph L2["② Dispatcher · guard.js decides what runs and what counts as pass"]
+    direction TB
+    D1["Parse<br/>cwd normalised to repo root<br/>SIGNOFF_* env · piped runs filtered"]
+    D2["Lock<br/>.signoff/lock/ dir + owner.json<br/>atomic mkdir; dead pid or >10 min reclaimed<br/>wait cap SIGNOFF_LOCK_WAIT_MS=8s"]
+    D3["Select gates<br/>five by default<br/>name p1..p5; a hook runs only its stage"]
+    D4["Verdict<br/>0 all pass · 1 any gate red · 2 usage or env<br/>no partial pass; --json emits the result"]
+    D1 ~~~ D2 ~~~ D3 ~~~ D4
+  end
+
+  subgraph L3["③ Five gates · each answers: read → decide → fix"]
+    direction TB
+    P1["P1 Tests<br/>read: config.test_cmd, else auto-detect<br/>decide: test exit code ≠ 0<br/>fix: pin the command in config"]
+    P2["P2 Coverage<br/>read: scenario files, assertion count<br/>decide: below threshold, or no assertions<br/>fix: add assertions; --strict is stricter"]
+    P3["P3 Queue<br/>read: status in tasks/id/card.json<br/>decide: not done, or fields missing<br/>fix: finish the card's acceptance criteria"]
+    P4["P4 Ledger<br/>read: audit.log hash chain + rollback commit<br/>decide: chain broken, rollback gone, trailer missing<br/>fix: p4 ask/confirm, or roll back"]
+    P5["P5 Anti-slop<br/>read: docs added by this change<br/>decide: placeholders · claims without evidence<br/>fix: add evidence or delete it"]
+    P1 ~~~ P2 ~~~ P3 ~~~ P4 ~~~ P5
+  end
+
+  subgraph L4["④ State machine · what happens inside one commit"]
+    direction TB
+    S1["pre-commit<br/>all five pass → marker {tree, mode} written"]
+    S2["commit-msg<br/>marker.tree == HEAD tree ?<br/>yes → append the Signoff-Pass trailer"]
+    S3["pre-push<br/>every commit in the audit window checked<br/>missing trailer = red"]
+    S4["CI<br/>gates + audit again<br/>no git identity means no fake pass"]
+    S1 ~~~ S2 ~~~ S3 ~~~ S4
+  end
+
+  subgraph L5["⑤ Artifacts · judgment leaves evidence"]
+    direction TB
+    F1["passed<br/>tree + mode(pass|skip) + ts<br/>invalidated when tree changes"]
+    F2["audit.log<br/>append-only hash chain: prevHash · action · rollback"]
+    F3["installed.json<br/>install-point sha / time / version<br/>left edge of the audit window"]
+    F4["commit message<br/>Signoff-Pass: tree<br/>--no-verify is the only hole"]
+    F5["config.json<br/>thresholds · test command · P5 word list"]
+    F1 ~~~ F2 ~~~ F3 ~~~ F4 ~~~ F5
+  end
+
+  subgraph L6["⑥ External dependencies · only two are hard requirements"]
+    direction TB
+    X1["Node ≥ 18<br/>pure JS · no build step · no native modules"]
+    X2["git<br/>hook location · history · ancestor checks"]
+    X3["Test runner<br/>whatever the repo uses; falls back when absent"]
+    X4["Python · peer tests only<br/>never invoked at runtime"]
+    X5["GitHub Actions<br/>optional, --no-ci skips it"]
+    X1 ~~~ X2 ~~~ X3 ~~~ X4 ~~~ X5
+  end
+
+  L1 -->|calls| L2
+  L2 -->|picks gates per stage| L3
+  L3 -->|writes marker / trailer| L4
+  L4 -->|persists| L5
+  L5 -->|audit comparison| L6
+
+
+  classDef entry fill:#eef3fb,stroke:#2f6fdd,stroke-width:1.4px,color:#0f2d5c
+  classDef sched fill:#fdf3e7,stroke:#b45309,stroke-width:1.4px,color:#5c2c05
+  classDef gate fill:#e8f7f0,stroke:#0e9f6e,stroke-width:1.4px,color:#0b4a33
+  classDef state fill:#eef2ff,stroke:#4f46e5,stroke-width:1.4px,color:#312e81
+  classDef data fill:#f3ecfd,stroke:#7c3aed,stroke-width:1.4px,color:#3d1e6b
+  classDef ext fill:#f4f5f7,stroke:#6b7280,stroke-width:1.2px,color:#374151
+  classDef note fill:#ffffff,stroke:#0f172a,stroke-dasharray:4 3,color:#0f172a
+  class A1,A2,A3,A4 entry
+  class D1,D2,D3,D4 sched
+  class P1,P2,P3,P4,P5 gate
+  class S1,S2,S3,S4 state
+  class F1,F2,F3,F4,F5 data
+  class X1,X2,X3,X4,X5 ext
