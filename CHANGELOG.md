@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.9.2 — 2026-11-06
+
+- 新增 `signoff explain p1..p5`（`--json`）：每关查什么、怎么判、怎么修，答案与代码放在一起。
+- 新增 `integrations/skill/SKILL.md`：给 agent 的技能说明书，只写模型容易做错的三件事（退出码是判决、不许绕过红关、先 doctor 再 explain）。
+- 新增 `integrations/mcp/server.js`：零依赖 stdio MCP 服务器，五个工具（run/status/doctor/audit/explain），`isError` 跟随退出码；`initialize` / `tools/list` / `tools/call` 已实测。
+- 新增 `docs/integrations.md`（四种形态对比，含“为什么不做宿主插件”）与 `docs/promotion.md`（GitHub 可发现性、清单收录、度量）。
+- README 增加接入方式（中英两版）。
+- 自查 164 项、Python 对等 30 项全过。
+
 ## 3.9.1 — 2026-11-06
 
 - 修 `audit --since-install` 会在安装点不是 HEAD 祖先时静默给出偏大范围：现在先 `git cat-file -e <sha>^{commit}` + `git merge-base --is-ancestor`，对不上退 2 并说明原因（rebase / 强推 / 换了克隆），提示改用 `signoff init --reset-install` 或 `--range`。审计结论不可信比审计报错更糟。

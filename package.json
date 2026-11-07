@@ -1,6 +1,6 @@
 {
   "name": "dsh-signoff",
-  "version": "3.9.1",
+  "version": "3.9.2",
   "description": "SignOff (落印) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
   "license": "MIT",
   "bin": {
@@ -20,15 +20,20 @@
     "node": ">=18"
   },
   "keywords": [
-    "dsh",
-    "signoff",
-    "gates",
-    "precommit",
-    "coverage",
-    "fanout",
-    "audit",
+    "agent",
+    "ai-agents",
     "anti-slop",
-    "agent"
+    "audit",
+    "code-review",
+    "coverage",
+    "dsh",
+    "fanout",
+    "gates",
+    "git-hooks",
+    "mcp",
+    "pre-commit",
+    "precommit",
+    "signoff"
   ],
   "scripts": {
     "test": "node test/selftest.js",

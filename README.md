@@ -74,6 +74,7 @@ signoff uninstall --all      # 卸掉钩子 + CI + 配置
 signoff uninstall --keep-config  # 卸掉钩子 + CI + 运行时状态，保留配置与账本
 signoff p4 export --merge ../other/.signoff/audit.log   # 多仓库合并成一张表
 signoff p4 export --format json --out ledger.json       # 也可以导出 json / csv
+signoff explain p2           # 这一关到底查什么、怎么判的
 ```
 
 ## 三、在其它代码过程里能干什么
@@ -129,6 +130,15 @@ signoff p5 docs README.md
 ```
 
 每关都会把结果写到 `.signoff/pN.json`（P4 的账本在仓库内 `.signoff/audit.log`，不在仓库里时退回 `~/.signoff/audit.log`；可用 `SIGNOFF_HOME` 改位置），便于 CI 存档与二次核对。
+
+## 接入方式
+
+- **CLI**（本体）：`npm i -g dsh-signoff`，任何能起进程的地方都能调，退出码即判决。
+- **技能**：`integrations/skill/SKILL.md`，把“退出码是判决、不许绕过、先 doctor 再 explain”教给 agent。
+- **MCP 服务器**：`integrations/mcp/server.js`，给 Claude Desktop / DSH / IDE 用，五个工具，`isError` 跟随退出码。
+- **宿主插件**：可行但不推荐（只有要画 UI 时才值得），理由见 [docs/integrations.md](docs/integrations.md)。
+
+推广与可发现性的现状和做法见 [docs/promotion.md](docs/promotion.md)。
 
 ## 六、边界（先说清不做什么）
 
@@ -248,6 +258,20 @@ signoff p5 docs README.md
 - Hooks are bypassable, but not silently: `git commit --no-verify` leaves no `Signoff-Pass` marker, so `signoff audit` (run by CI) fails the range; `SIGNOFF_SKIP=1` leaves `Signoff-Skip` and is red under `--strict`.
 - Needs Node 18+ only; no Python and no other interpreter is required.
 - No network calls; only `git` and the local interpreters.
+
+### Integrations
+
+- **CLI** (the product): `npm i -g dsh-signoff`; anything that can spawn a process can run
+  it, and the exit code is the verdict.
+- **Skill**: `integrations/skill/SKILL.md` teaches an agent the three things it gets wrong:
+  the exit code is the verdict, never bypass a red gate, and `doctor`/`explain` come before
+  touching config.
+- **MCP server**: `integrations/mcp/server.js` for Claude Desktop / DSH / IDEs — five tools,
+  `isError` mirrors the exit code.
+- **Host plugin**: possible but not recommended; it only pays off when gate results must be
+  rendered in a host UI. Reasoning in [docs/integrations.md](docs/integrations.md).
+
+Discovery and promotion notes: [docs/promotion.md](docs/promotion.md).
 
 ## License
 
