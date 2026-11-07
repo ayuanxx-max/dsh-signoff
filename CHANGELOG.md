@@ -1,3 +1,14 @@
+## 4.1.5
+
+**注册表工作流不再依赖手动重跑。**
+
+- 新增 `Wait for npm to serve this version`：从 `server.json` 取版本，轮询
+  `https://registry.npmjs.org/<pkg>/<version>` 直到 200（最多 10 分钟）；release 事件的 tag 与
+  `server.json#version` 不一致直接红。
+- 发布失败后重试 4 次、退避 20/40/60 秒，每次重试前再核一次 npm。
+- 原因：npm 是分段发布，`npm publish` 返回成功时 registry 仍可能 404；此前每个版本都要人工
+  rerun 一次工作流才成功。
+
 ## 4.1.4
 
 **把 4.1.3 之后的两处文档修订也发进包里，避免仓库与发布物不一致。**
