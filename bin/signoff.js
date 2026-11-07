@@ -13,7 +13,7 @@ const fs = require("fs");
 // way in: the first gate command in a repo finishes the job itself. Read-only commands
 // (doctor/status/explain/audit) and the hook path stay untouched - the hook path is what
 // the machine-wide guard uses, and there a light P1 is the whole point.
-const BOOTSTRAP_CMDS = new Set(["p1", "p2", "p3", "p4", "p5", "all", "guard"]);
+const BOOTSTRAP_CMDS = new Set(["p1", "p2", "p3", "p4", "p5", "all", "guard", "secrets"]);
 function maybeBootstrap(cmd) {
   if (!BOOTSTRAP_CMDS.has(cmd)) return;
   if (process.env.SIGNOFF_NO_BOOTSTRAP === "1") return;
@@ -58,6 +58,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff guard [--full]                     run the gate set the hooks use (right now)
   signoff status                             is this repo guarded?
 signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
+  signoff secrets [--staged|--all] [--json]   scan staged files for leaked credentials
   signoff explain <p1..p5>                   what a gate checks and how it decides
   signoff mcp                                serve the gates over stdio (MCP clients)
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
@@ -99,6 +100,23 @@ function runGate(name, args) {
   return r.status === null ? 1 : r.status;
 }
 
+// Secrets run first in `all`: an unstaged key is worth more than a style report,
+// and a non-git directory has nothing to scan (exit 2 from secrets is not a failure).
+function runSecrets(args) {
+  try {
+    const inside = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    if (inside.status !== 0) return 0;
+    return require("../lib/secrets.js").run(["--json"]) || 0;
+  } catch (e) {
+    console.error(`signoff: secrets failed: ${e && e.message}`);
+    return 1;
+  }
+}
+
 function runAll(args) {
   const steps = [
     ["p1", args],
@@ -107,6 +125,9 @@ function runAll(args) {
     ["p4", ["verify"]],
   ];
   let code = 0;
+  console.log("\n== signoff secrets ==");
+  const sc = runSecrets(args);
+  if (sc !== 0) code = sc;
   for (const [name, a] of steps) {
     console.log(`\n== signoff ${name} ==`);
     const c = runGate(name, a);
@@ -174,6 +195,10 @@ if (cmd === "audit") {
   }
 }
 if (cmd === "explain") process.exit(require("../lib/explain.js").run(rest));
+if (cmd === "secrets") {
+  maybeBootstrap("secrets");
+  process.exit(require("../lib/secrets.js").run(rest));
+}
 if (cmd === "mcp") {
   // stdio JSON-RPC; the module wires stdin and stays alive until the client closes it.
   require("../integrations/mcp/server.js");

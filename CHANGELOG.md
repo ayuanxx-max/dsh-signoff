@@ -1,3 +1,15 @@
+## 3.12.0
+
+**P0：密钥扫描门 + 运行器探测扩展 + 结果缓存。**（210 tests）
+
+- `signoff secrets`：16 条高信号规则扫暂存区，命中即退出 1；值在输出里打码（`AKIA…EF`）。
+  `--engine gitleaks` 可换用本机 gitleaks 的全套规则，不装也能跑。
+- 守护顺序改成 **secrets → P5 → P1 → …**：密钥泄露不排在测试后面。
+- 机器层守护在未 opt-in 的仓库也会先扫密钥（`--no-state`，不写任何状态）。
+- P1 运行器探测从 2 种扩到 11 种：go / cargo / maven / gradle / dotnet / ruby / elixir / php / make。
+- P1 结果缓存：同一暂存树 + 同一命令 + 同版本 → 0 ms 命中；纯文档提交直接跳过测试。
+  开关：`SIGNOFF_NO_CACHE=1`、`SIGNOFF_NO_FAST=1`。
+
 ## 3.11.2（2026-11-07）
 
 - 测试修复：安装点补 sha 的用例在 CI 上失败，因为夹具仓库里那次提交触发的是 signoff 自己的钩子，

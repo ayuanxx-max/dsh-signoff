@@ -821,6 +821,92 @@ function main() {
       const ip2 = JSON.parse(fs.readFileSync(path.join(repair, ".signoff", "installed.json"), "utf8"));
       check("re-init fills the install point", /^[0-9a-f]{40}$/.test(ip2.sha) ? 1 : 0, 1);
       check("audit --since-install works after the repair", run(["audit", "--since-install"], repair, env).status, 0);
+
+      // ---------------------------------------------------------- P0 features
+      // 1. secrets: a staged key fails the gate and is never printed in full.
+      const sec = fresh("secrets");
+      // The literal is assembled at run time so this file is not itself a hit for the
+      // scanner under test (a scanner that trips on its own fixtures gets allowlisted
+      // into uselessness).
+      const fakeAws = "AKIA" + "1234567890ABCDEF";
+      fs.writeFileSync(path.join(sec, "app.js"), `const k = "${fakeAws}";\n`, "utf8");
+      git(["add", "-A"], sec, env);
+      const sr1 = run(["secrets", "--staged", "--json"], sec, env);
+      check("secrets blocks a staged key", sr1.status, 1);
+      check("secrets reports one hit", JSON.parse(sr1.stdout).hits, 1);
+      const srState = JSON.parse(fs.readFileSync(path.join(sec, ".signoff", "secrets.json"), "utf8"));
+      check("secrets names the rule", srState.findings[0].rule, "aws-access-key");
+      check("secrets masks the value", !srState.findings[0].match.includes("1234567890ABCDEF"), true);
+      fs.writeFileSync(
+        path.join(sec, ".signoff", "config.json"),
+        JSON.stringify({ secrets: { allow: ["aws-access-key"] } }),
+        "utf8"
+      );
+      check("secrets honours the allowlist", run(["secrets", "--staged"], sec, env).status, 0);
+      const secClean = fresh("secrets-clean");
+      fs.writeFileSync(path.join(secClean, "a.md"), "# clean\n", "utf8");
+      git(["add", "-A"], secClean, env);
+      check("secrets passes a clean file", run(["secrets", "--staged"], secClean, env).status, 0);
+
+      // 2. secrets run inside the guard, before the suite.
+      const secGuard = fresh("secrets-guard");
+      const fakePat = "ghp_" + "abcdefghijklmnopqrstuvwxyz0123456789";
+      fs.writeFileSync(path.join(secGuard, "app.js"), `const t = "${fakePat}";\n`, "utf8");
+      git(["add", "-A"], secGuard, env);
+      const sg = run(["hook", "pre-commit"], secGuard, { SIGNOFF_HOME: home });
+      check("guard fails on a staged key", sg.status, 1);
+      check("guard names the secrets gate", /secrets/.test(sg.stdout) ? 1 : 0, 1, (sg.stdout || "").trim().split("\n").slice(-12).join(" | "));
+
+      // 3. runner detection beyond npm/pytest.
+      const p1lib = require(path.join(ROOT, "lib", "p1.js"));
+      const det = (name, file) => {
+        const d = fresh("det-" + name + "-" + Date.now().toString(36));
+        fs.writeFileSync(path.join(d, file), "x", "utf8");
+        return p1lib.defaultCommands(d)[0];
+      };
+      check("p1 detects go", det("go", "go.mod"), "go test ./...");
+      check("p1 detects cargo", det("cargo", "Cargo.toml"), "cargo test --quiet");
+      check("p1 detects maven", det("maven", "pom.xml"), "mvn -q test");
+      check("p1 detects dotnet", det("dotnet", "app.csproj"), "dotnet test --nologo");
+      check("p1 detects elixir", det("elixir", "mix.exs"), "mix test");
+
+      // 4. cache: the same staged tree runs the suite once.
+      const cacheRepo = fresh("cache");
+      const counter = path.join(cacheRepo, "count.txt");
+      fs.writeFileSync(
+        path.join(cacheRepo, "package.json"),
+        JSON.stringify({ scripts: { test: `node -e "require('fs').appendFileSync('count.txt','x')"` } }),
+        "utf8"
+      );
+      git(["add", "-A"], cacheRepo, env);
+      const c1 = run(["p1"], cacheRepo, env);
+      check("p1 runs the suite", c1.status, 0);
+      check("p1 counter after the first run", fs.existsSync(counter) ? fs.readFileSync(counter, "utf8").length : 0, 1);
+      const c2 = run(["p1"], cacheRepo, env);
+      check("p1 cache hit on the same tree", /cached/.test(c2.stdout) ? 1 : 0, 1);
+      check("p1 cache did not rerun the suite", fs.readFileSync(counter, "utf8").length, 1);
+      const c3 = run(["p1"], cacheRepo, { SIGNOFF_HOME: HOME, SIGNOFF_NO_BOOTSTRAP: "1", SIGNOFF_NO_CACHE: "1" });
+      check("p1 --no-cache reruns", /cached/.test(c3.stdout) ? 0 : 1, 1);
+      check("p1 --no-cache counter grows", fs.readFileSync(counter, "utf8").length, 2);
+
+      // 5. docs-only fast path: a markdown change never pays for the suite.
+      const docsRepo = fresh("docsfast");
+      fs.mkdirSync(path.join(docsRepo, "docs"), { recursive: true });
+      fs.writeFileSync(
+        path.join(docsRepo, "package.json"),
+        JSON.stringify({ scripts: { test: 'node -e "process.exit(1)"' } }),
+        "utf8"
+      );
+      git(["add", "package.json"], docsRepo, env);
+      git(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "pkg", "--no-verify"], docsRepo, env);
+      fs.writeFileSync(path.join(docsRepo, "docs", "a.md"), "# note\n", "utf8");
+      git(["add", "docs/a.md"], docsRepo, env);
+      const d1 = run(["p1"], docsRepo, env);
+      check("p1 passes a docs-only change", d1.status, 0);
+      check("p1 says it was docs only", /docs only/.test(d1.stdout) ? 1 : 0, 1);
+      fs.writeFileSync(path.join(docsRepo, "code.js"), "x", "utf8");
+      git(["add", "-A"], docsRepo, env);
+      check("p1 runs the suite once code changes", run(["p1"], docsRepo, env).status, 1);
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }

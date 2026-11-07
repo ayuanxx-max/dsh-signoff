@@ -125,7 +125,18 @@ signoff uninstall --keep-config  # 卸掉钩子 + CI + 运行时状态，保留�
 signoff p4 export --merge ../other/.signoff/audit.log   # 多仓库合并成一张表
 signoff p4 export --format json --out ledger.json       # 也可以导出 json / csv
 signoff explain p2           # 这一关到底查什么、怎么判的
+signoff secrets              # 只扫暂存区的密钥泄露（钩子里自动先跑）
+signoff secrets --all --json # 全仓库扫一遍，一条 JSON 判决
 ```
+
+### 密钥扫描与提速（3.12.0 起）
+
+- **P1 之前先扫密钥**：内置 16 条高信号规则（AWS / GitHub / GitLab / OpenAI / Google / Slack / Stripe / npm / SendGrid / 私钥块 / Azure / Discord webhook / 带密码的数据库 URL / 通用凭证）。
+  命中即失败；装了 `gitleaks` 可用 `--engine gitleaks` 换全套规则，没装也不影响（纯 Node，无需二进制）。
+- **值不会原样打印**：只显示 `AKIA…EF` 这种前缀 + 规则名 + 行号，避免把日志变成二次泄露。放行写在 `.signoff/config.json` 的 `secrets.allow`。
+- **未 opt-in 的仓库也扫**：机器层守护走 `--no-state`，扫完不留任何文件。
+- **运行器探测扩了 9 种**：go / cargo / maven / gradle / dotnet / ruby / elixir / php / make（`tests/` 与 `package.json` 仍在最前）。
+- **同一暂存树结果缓存**：重复跑 0 ms；**纯文档提交跳过测试**。两个开关都可关：`SIGNOFF_NO_CACHE=1` / `SIGNOFF_NO_FAST=1`。
 
 ## 三、在其它代码过程里能干什么
 
@@ -242,6 +253,18 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 | P3 queue | `signoff p3 validate\|plan\|collect` | Cards complete, waves collision-free, nobody out of scope or empty-handed |
 | P4 ledger | `signoff p4 ask\|confirm\|verify\|export` | Did the risky action hold a ticket, is the rollback point still there |
 | P5 anti-slop | `signoff p5` | Empty words, absolute claims, "verified" with no number |
+
+### Secrets and speed (since 3.12.0)
+
+- `signoff secrets` scans the index before P1 runs; the guard calls it first, always.
+  Sixteen high-signal rules (AWS, GitHub, GitLab, OpenAI, Google, Slack, Stripe, npm,
+  SendGrid, private-key blocks, Azure, Discord webhooks, credentialed DB URLs, generic
+  `password = "..."`), plain Node, no binary. `--engine gitleaks` uses gitleaks when installed.
+- Values are masked in output (`AKIA…EF`); allow a rule in `.signoff/config.json` under `secrets.allow`.
+- The machine-wide guard scans secrets even in repos that never opted in (`--no-state`: nothing written).
+- Runner detection now covers go / cargo / maven / gradle / dotnet / ruby / elixir / php / make.
+- Same staged tree = cached verdict (0 ms); a docs-only commit skips the suite. Off switches:
+  `SIGNOFF_NO_CACHE=1`, `SIGNOFF_NO_FAST=1`.
 
 ### Zero-touch
 

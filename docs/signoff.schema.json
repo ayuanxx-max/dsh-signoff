@@ -36,6 +36,21 @@
     "pre_push": {
       "type": "boolean",
       "description": "Run the full set before a push too."
+    },
+    "secrets": {
+      "type": [
+        "boolean",
+        "object"
+      ],
+      "description": "Secret scanning before P1. false disables it; an object accepts {allow: [rule or rule:path]}."
+    },
+    "cache": {
+      "type": "boolean",
+      "description": "Cache the P1 verdict per staged tree (default true)."
+    },
+    "docsFast": {
+      "type": "boolean",
+      "description": "Skip the suite when every staged file is a document (default true)."
     }
   },
   "additionalProperties": false
