@@ -907,6 +907,113 @@ function main() {
       fs.writeFileSync(path.join(docsRepo, "code.js"), "x", "utf8");
       git(["add", "-A"], docsRepo, env);
       check("p1 runs the suite once code changes", run(["p1"], docsRepo, env).status, 1);
+
+      // 6. signed trailers: the signature travels with the commit and audit checks it.
+      const keyDir = path.join(base, "signkey");
+      fs.mkdirSync(keyDir, { recursive: true });
+      const keyPath = path.join(keyDir, "id");
+      const keygen = spawnSync("ssh-keygen", ["-t", "ed25519", "-N", "", "-C", "t@signoff", "-f", keyPath], {
+        encoding: "utf8",
+      });
+      check("fixture ssh key generated", keygen.status, 0, (keygen.stderr || "").trim());
+      const signEnv = { SIGNOFF_HOME: home, SIGNOFF_SIGN_KEY: keyPath, SIGNOFF_NO_BOOTSTRAP: "1" };
+      const signed = fresh("signed");
+      // A base commit first: audit needs a real HEAD~1 to have a range at all.
+      fs.writeFileSync(path.join(signed, "base.txt"), "b", "utf8");
+      git(["add", "-A"], signed, env);
+      git(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "base", "--no-verify"], signed, env);
+      fs.writeFileSync(
+        path.join(signed, "package.json"),
+        JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }),
+        "utf8"
+      );
+      fs.writeFileSync(path.join(signed, "a.txt"), "a", "utf8");
+      check("init --sign exits 0", run(["init", "--sign", "--no-ci", "--quiet"], signed, signEnv).status, 0);
+      check("init --sign records a key", fs.existsSync(path.join(signed, ".signoff", "signing_key")) ? 1 : 0, 1);
+      const signedCfg = JSON.parse(fs.readFileSync(path.join(signed, ".signoff", "config.json"), "utf8"));
+      check("init --sign pins sign_key", typeof signedCfg.sign_key === "string" ? 1 : 0, 1);
+      git(["add", "-A"], signed, env);
+      check("signed pre-commit", run(["hook", "pre-commit"], signed, signEnv).status, 0);
+      const msgRel = ".git/COMMIT_EDITMSG_TEST";
+      fs.writeFileSync(path.join(signed, msgRel), "test the signed trailer\n", "utf8");
+      check("commit-msg exits 0", run(["hook", "commit-msg", msgRel], signed, signEnv).status, 0);
+      const msgText = fs.readFileSync(path.join(signed, msgRel), "utf8");
+      check("trailer has Signoff-Pass", /^Signoff-Pass: [0-9a-f]{12}$/m.test(msgText) ? 1 : 0, 1);
+      check("trailer has Signoff-Key", /^Signoff-Key: ssh-ed25519 /m.test(msgText) ? 1 : 0, 1);
+      check("trailer has Signoff-Sig", /^Signoff-Sig: [A-Za-z0-9+/=]{40,}$/m.test(msgText) ? 1 : 0, 1);
+      git(
+        ["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-q", "-F", msgRel, "--no-verify"],
+        signed,
+        env
+      );
+      const av1 = run(["audit", "--range", "HEAD~1..HEAD", "--verify", "--json"], signed, signEnv);
+      check("audit --verify passes", av1.status, 0, (av1.stderr || "").trim());
+      check("audit sees a self-signed commit", JSON.parse(av1.stdout).signatures["self-signed"], 1);
+      fs.writeFileSync(
+        path.join(signed, ".signoff", "allowed_signers"),
+        fs.readFileSync(keyPath + ".pub", "utf8"),
+        "utf8"
+      );
+      const av2 = run(["audit", "--range", "HEAD~1..HEAD", "--verify", "--json"], signed, signEnv);
+      check("audit verifies against allowed_signers", JSON.parse(av2.stdout).signatures.verified, 1);
+      // A tampered tree cannot verify: the signature covers the full tree id.
+      const tamper = run(["audit", "--range", "HEAD~1..HEAD", "--verify", "--require-signed", "--json"], signed, signEnv);
+      check("audit --require-signed passes when signed", tamper.status, 0);
+
+      // 7. line coverage of the change.
+      const covRepo = fresh("cov");
+      const lines = [];
+      for (let i = 1; i <= 10; i++) lines.push(`const v${i} = ${i};`);
+      fs.writeFileSync(path.join(covRepo, "a.js"), lines.join("\n") + "\n", "utf8");
+      fs.mkdirSync(path.join(covRepo, "coverage"), { recursive: true });
+      const da = [];
+      for (let i = 1; i <= 10; i++) da.push(`DA:${i},${i <= 8 ? 1 : 0}`);
+      fs.writeFileSync(
+        path.join(covRepo, "coverage", "lcov.info"),
+        ["SF:a.js", ...da, "end_of_record", ""].join("\n"),
+        "utf8"
+      );
+      git(["add", "-A"], covRepo, env);
+      git(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "base", "--no-verify"], covRepo, env);
+      check("cov fails under the threshold", run(["cov", "--min", "90"], covRepo, env).status, 1);
+      check("cov passes over the threshold", run(["cov", "--min", "70"], covRepo, env).status, 0);
+      const covJson = JSON.parse(run(["cov", "--min", "70", "--json"], covRepo, env).stdout);
+      check("cov reports 80 percent", covJson.pct, 80);
+      check("cov reads lcov", covJson.source, "coverage/lcov.info");
+      // Diff mode: a change on uncovered lines is the case that matters.
+      fs.writeFileSync(path.join(covRepo, "a.js"), lines.join("\n") + "\nconst extra = 11;\n", "utf8");
+      git(["add", "a.js"], covRepo, env);
+      const covDiff = run(["cov", "--diff", "--base", "HEAD", "--min", "80", "--json"], covRepo, env);
+      check("cov diff mode passes with no instrumented change", covDiff.status, 0);
+      check("cov diff mode is reported", JSON.parse(covDiff.stdout).mode, "diff");
+      check("cov without data exits 2", run(["cov", "--file", "missing.json"], covRepo, env).status, 2);
+      check("cov allows missing data", run(["cov", "--file", "missing.json", "--allow-missing"], covRepo, env).status, 0);
+
+      // 8. CI annotations: a finding becomes a line annotation, not a log paragraph.
+      const ciRepo = fresh("ci");
+      const ciFake = "AKIA" + "1234567890ABCDEF";
+      fs.writeFileSync(path.join(ciRepo, "app.js"), `const k = "${ciFake}";\n`, "utf8");
+      git(["add", "-A"], ciRepo, env);
+      const summaryFile = path.join(base, "step-summary.md");
+      const ciRun = run(["secrets", "--staged"], ciRepo, {
+        SIGNOFF_HOME: HOME,
+        SIGNOFF_NO_BOOTSTRAP: "1",
+        GITHUB_ACTIONS: "true",
+        GITHUB_STEP_SUMMARY: summaryFile,
+      });
+      check("CI run fails on the secret", ciRun.status, 1);
+      check(
+        "CI prints an annotation",
+        /^::error file=app\.js,line=1,title=signoff\/aws-access-key::/m.test(ciRun.stdout) ? 1 : 0,
+        1,
+        (ciRun.stdout || "").trim().split("\n").slice(0, 2).join(" | ")
+      );
+      check("CI writes a step summary", fs.existsSync(summaryFile) ? 1 : 0, 1);
+      check(
+        "step summary names the rule",
+        fs.existsSync(summaryFile) && /aws-access-key/.test(fs.readFileSync(summaryFile, "utf8")) ? 1 : 0,
+        1
+      );
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }

@@ -1,3 +1,15 @@
+## 3.13.0
+
+**P1：签名判决、增量行覆盖率、CI 注解。**（235 tests）
+
+- `signoff init --sign`：仓库本地 ed25519 密钥；`commit-msg` 追加 `Signoff-Key:` + `Signoff-Sig:`，
+  对完整 tree 签名，单行 base64 做 trailer。无密钥则保持未签名，不阻塞提交。
+- `signoff audit --verify` / `--require-signed`：逐提交验签；身份锚点是提交进仓库的
+  `.signoff/allowed_signers`（或 `signoff.json` 的 `allowed_signers`）。不在名单只报 `self-signed`。
+- `signoff cov --diff --min N`：只统计本次改动新增行的覆盖，读 lcov / istanbul / python coverage json，
+  没有覆盖率文件时报"未测"（退出 2）而不是通过；`--allow-missing` 可放行。
+- `GITHUB_ACTIONS=true` 时输出 `::error file=…,line=…` 注解 + `$GITHUB_STEP_SUMMARY` 表格。
+
 ## 3.12.0
 
 **P0：密钥扫描门 + 运行器探测扩展 + 结果缓存。**（210 tests）

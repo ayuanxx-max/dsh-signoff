@@ -138,6 +138,17 @@ signoff secrets --all --json # 全仓库扫一遍，一条 JSON 判决
 - **运行器探测扩了 9 种**：go / cargo / maven / gradle / dotnet / ruby / elixir / php / make（`tests/` 与 `package.json` 仍在最前）。
 - **同一暂存树结果缓存**：重复跑 0 ms；**纯文档提交跳过测试**。两个开关都可关：`SIGNOFF_NO_CACHE=1` / `SIGNOFF_NO_FAST=1`。
 
+### 签名与增量覆盖率（3.13.0 起）
+
+- **提交自带签名**：`signoff init --sign` 生成仓库本地 ed25519 密钥，`commit-msg` 在 `Signoff-Pass:` 之外再写
+  `Signoff-Key:` + `Signoff-Sig:`（对完整 tree 签名，单行 base64）。没有密钥就只写未签名的 `Signoff-Pass`，不阻塞提交。
+- **可以复核**：`signoff audit --verify` 逐个提交验签，`--require-signed` 把未签名也算失败。身份锚点是
+  仓库里提交的 `.signoff/allowed_signers`（或 `signoff.json` 的 `allowed_signers`）：不在名单里只报 `self-signed`，绝不报 `verified`。
+- **增量行覆盖率**：`signoff cov --diff --min 80` 只算这次改动新增的行，读项目已有的 `coverage/lcov.info` /
+  `coverage-final.json` / python `coverage json`，不额外装运行器；没有覆盖率文件时报"没测过"，不会假装通过。
+- **CI 直接标到行**：`GITHUB_ACTIONS=true` 时，密钥/覆盖率发现输出 `::error file=…,line=…` 注解并写步骤摘要，
+  PR 页面直接看到，不用翻日志。
+
 ## 三、在其它代码过程里能干什么
 
 | 场景 | 五关怎么用 |
@@ -265,6 +276,20 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 - Runner detection now covers go / cargo / maven / gradle / dotnet / ruby / elixir / php / make.
 - Same staged tree = cached verdict (0 ms); a docs-only commit skips the suite. Off switches:
   `SIGNOFF_NO_CACHE=1`, `SIGNOFF_NO_FAST=1`.
+
+### Signed verdicts and change coverage (since 3.13.0)
+
+- `signoff init --sign` creates a repo-local ed25519 key; `commit-msg` then adds `Signoff-Key:` +
+  `Signoff-Sig:` next to `Signoff-Pass:`. The signature covers the full tree id and is a single
+  base64 line, so it survives as a trailer. No key means an unsigned trailer - never a blocked commit.
+- `signoff audit --verify` checks each commit's signature; `--require-signed` makes unsigned commits
+  fail. Identity needs an anchor: a committed `.signoff/allowed_signers` (or `allowed_signers` in
+  `signoff.json`). A key that is not listed is reported `self-signed`, never `verified`.
+- `signoff cov --diff --min 80` counts only lines this change adds, reading the coverage file the
+  project already writes (lcov, istanbul, python coverage json). No coverage file means "not
+  measured", not "passed".
+- Under `GITHUB_ACTIONS=true`, findings become `::error file=...,line=...` annotations plus a step
+  summary, so a reviewer sees them on the diff.
 
 ### Zero-touch
 

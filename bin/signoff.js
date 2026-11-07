@@ -13,7 +13,7 @@ const fs = require("fs");
 // way in: the first gate command in a repo finishes the job itself. Read-only commands
 // (doctor/status/explain/audit) and the hook path stay untouched - the hook path is what
 // the machine-wide guard uses, and there a light P1 is the whole point.
-const BOOTSTRAP_CMDS = new Set(["p1", "p2", "p3", "p4", "p5", "all", "guard", "secrets"]);
+const BOOTSTRAP_CMDS = new Set(["p1", "p2", "p3", "p4", "p5", "all", "guard", "secrets", "cov"]);
 function maybeBootstrap(cmd) {
   if (!BOOTSTRAP_CMDS.has(cmd)) return;
   if (process.env.SIGNOFF_NO_BOOTSTRAP === "1") return;
@@ -59,6 +59,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff status                             is this repo guarded?
 signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
   signoff secrets [--staged|--all] [--json]   scan staged files for leaked credentials
+  signoff cov [--diff] [--min 80] [--json]   how much of this change the suite executed
   signoff explain <p1..p5>                   what a gate checks and how it decides
   signoff mcp                                serve the gates over stdio (MCP clients)
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
@@ -123,6 +124,8 @@ function runAll(args) {
     ["p2", args],
     ["p5", []],
     ["p4", ["verify"]],
+    // Coverage is opt-in on data: no coverage file means "not measured", not "failed".
+    ["cov", ["--allow-missing", "--diff"]],
   ];
   let code = 0;
   console.log("\n== signoff secrets ==");
@@ -195,6 +198,7 @@ if (cmd === "audit") {
   }
 }
 if (cmd === "explain") process.exit(require("../lib/explain.js").run(rest));
+if (cmd === "cov") process.exit(require("../lib/cov.js").run(rest));
 if (cmd === "secrets") {
   maybeBootstrap("secrets");
   process.exit(require("../lib/secrets.js").run(rest));

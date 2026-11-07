@@ -51,6 +51,26 @@
     "docsFast": {
       "type": "boolean",
       "description": "Skip the suite when every staged file is a document (default true)."
+    },
+    "coverage": {
+      "type": [
+        "boolean",
+        "object"
+      ],
+      "description": "Run signoff cov in the guard. true means min 80; {min: 90} sets the threshold.",
+      "properties": {
+        "min": {
+          "type": "number"
+        }
+      }
+    },
+    "sign": {
+      "type": "boolean",
+      "description": "Sign the commit trailer (needs a key)."
+    },
+    "sign_key": {
+      "type": "string",
+      "description": "Path to the private key used for trailers."
     }
   },
   "additionalProperties": false
