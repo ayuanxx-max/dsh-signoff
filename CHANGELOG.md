@@ -1,3 +1,10 @@
+## 4.1.7
+
+**与 4.1.6 内容相同；4.1.6 在 npm 上有一条无法覆盖的暂存记录（`E409 Cannot publish over previously staged version`，而 `npm stage list` 对当前所有 token 均返回空），因此换号重发。**
+
+- 代码、测试与 server.json 与 4.1.6 一致，仅版本号递增
+- 4.1.6 的 GitHub release 与 tag 一并删除，不留「有 release 没有包」的悬空版本
+
 ## 4.1.6
 
 **给注册表工作流本身加断言，防止"等待 npm"那一步被悄悄删掉。**
