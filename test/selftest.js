@@ -1166,6 +1166,12 @@ check("server.json name matches mcpName", srvj.name === pkgj.mcpName, true);
 check("tarball ships the mcp server", pkgj.files.some((f) => String(f).replace(/\/+$/, "") === "integrations"), true);
 check("mcp server file exists", fs.existsSync(path.join(__dirname, "..", "integrations", "mcp", "server.js")), true);
 check("release gate exports main", typeof require(path.join(__dirname, "..", "lib", "release.js")).main === "function", true);
+{
+  const wf = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "mcp-registry.yml"), "utf8");
+  check("registry workflow waits for npm", /Wait for npm to serve this version/.test(wf) && /registry\.npmjs\.org/.test(wf), true);
+  check("registry workflow rejects a tag that disagrees with server.json", /does not match server\.json version/.test(wf), true);
+  check("registry workflow retries the publish", /for attempt in 1 2 3 4/.test(wf), true);
+}
 
       check("action runs signoff", /run: signoff \$\{\{ inputs.args \}\}/.test(action), true);
       check("integrations doc lists actions", /uses: ayuanxx-max\/signoff-cli/.test(fs.readFileSync(path.join(__dirname, "..", "docs", "integrations.md"), "utf8")), true);
