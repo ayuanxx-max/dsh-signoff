@@ -1,5 +1,14 @@
 ## 4.1.9
 
+**注册表里"存在但 npm 上不存在"的版本，现在是硬失败；并加了一条退休通道。**
+
+- `release --post` 新增 `registry-versions-exist`：遍历注册表里状态为 active 的每个版本，逐个查
+  npm，404 即红。4.1.7 正是这种幽灵版本（被暂存记录挡在 npm 之外）。
+- 新增 `mcp-registry-retire.yml`（workflow_dispatch + 版本号入参）：本地 `mcp-publisher status`
+  需要设备码登录，CI 用 OIDC 就能无人值守地把幽灵版本标记为 deleted。
+
+## 4.1.9
+
 **收尾改名：把文档与安装说明里剩下的 `dsh-signoff` 全部换成 `signoff-cli`。**
 
 - README（也是 npm 页正文）：`--allow-scripts=dsh-signoff` → `signoff-cli`（两处）、`npx -y dsh-signoff mcp` → `npx -y signoff-cli mcp`、`devDependencies` 两处说明同步

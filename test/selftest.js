@@ -1165,6 +1165,8 @@ check("server.json names the package", srvj.packages[0].identifier === pkgj.name
 check("server.json name matches mcpName", srvj.name === pkgj.mcpName, true);
 check("tarball ships the mcp server", pkgj.files.some((f) => String(f).replace(/\/+$/, "") === "integrations"), true);
 check("mcp server file exists", fs.existsSync(path.join(__dirname, "..", "integrations", "mcp", "server.js")), true);
+check("release gate rejects phantom registry versions", /registry-versions-exist/.test(fs.readFileSync(path.join(__dirname, "..", "lib", "release.js"), "utf8")), true);
+check("retire workflow exists", fs.existsSync(path.join(__dirname, "..", ".github", "workflows", "mcp-registry-retire.yml")), true);
 check("release gate exports main", typeof require(path.join(__dirname, "..", "lib", "release.js")).main === "function", true);
 {
   const wf = fs.readFileSync(path.join(__dirname, "..", ".github", "workflows", "mcp-registry.yml"), "utf8");
