@@ -9,6 +9,24 @@ const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
+// npm >= 11 gates postinstall behind an allowlist, so the install cannot be the only
+// way in: the first gate command in a repo finishes the job itself. Read-only commands
+// (doctor/status/explain/audit) and the hook path stay untouched - the hook path is what
+// the machine-wide guard uses, and there a light P1 is the whole point.
+const BOOTSTRAP_CMDS = new Set(["p1", "p2", "p3", "p4", "p5", "all", "guard"]);
+function maybeBootstrap(cmd) {
+  if (!BOOTSTRAP_CMDS.has(cmd)) return;
+  if (process.env.SIGNOFF_NO_BOOTSTRAP === "1") return;
+  try {
+    const r = require("../lib/bootstrap").ensureRepo({ quiet: true });
+    if (r.installed && !process.argv.includes("--json")) {
+      console.error(`signoff: guarded ${require("path").basename(r.root)} automatically (${r.changed.join(", ")})`);
+    }
+  } catch (e) {
+    /* a convenience, never a verdict */
+  }
+}
+
 const GATES = {
   p1: "p1_verify.py",
   p2: "p2_coverage.py",
@@ -127,9 +145,15 @@ if (cmd === "-v" || cmd === "--version" || cmd === "version") {
 }
 if (cmd === "doctor") process.exit(require("../lib/doctor").run(rest));
 if (cmd === "ensure") process.exit(require("../lib/bootstrap").run(rest));
-if (cmd === "all") process.exit(runAll(rest));
+if (cmd === "all") {
+  maybeBootstrap("all");
+  process.exit(runAll(rest));
+}
 if (cmd === "init") process.exit(guard("init", rest));
-if (cmd === "guard") process.exit(guard("guard", rest));
+if (cmd === "guard") {
+  maybeBootstrap("guard");
+  process.exit(guard("guard", rest));
+}
 if (cmd === "hook") process.exit(guard("hook", rest));
 if (cmd === "status") process.exit(guard("status", rest));
 if (cmd === "uninstall") {
@@ -154,7 +178,10 @@ if (cmd === "mcp") {
   require("../integrations/mcp/server.js");
   return;
 }
-if (GATES[cmd]) process.exit(runGate(cmd, rest));
+if (GATES[cmd]) {
+  maybeBootstrap(cmd);
+  process.exit(runGate(cmd, rest));
+}
 
 console.error(`signoff: unknown command "${cmd}"\n`);
 console.error(HELP);

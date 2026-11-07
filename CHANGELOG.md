@@ -1,3 +1,12 @@
+## 3.10.1（2026-11-07）
+
+- 兜底：npm 11 把 `postinstall` 放进脚本 allowlist 提示，可能不执行；现在**仓库里第一次跑任何一关**
+  （`signoff p1..p5`、`all`、`guard`）会自动把 hooks / config / CI / ledger 装好，第二次起静默。
+- 只读命令（`doctor`、`status`、`explain`、`audit`）与钩子路径不做自动安装：前者不该改现场，
+  后者是机器层的轻量关，未 opt-in 的仓库只跑 P1。
+- 文档：补 `--allow-scripts=dsh-signoff` 与首关兜底的说明（中英双语）。
+- 测试：`npm test` 177 passed（夹具默认 `SIGNOFF_NO_BOOTSTRAP=1`，只有 ensure 用例显式打开）。
+
 ## 3.10.0（2026-11-07）
 
 **零接触安装**：`npm i -g dsh-signoff` 之后不再需要 `signoff init`。

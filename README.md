@@ -57,6 +57,9 @@ signoff ensure --global   # 只重装/修复机器层
 signoff ensure --json     # 给脚本看的结构化结果
 ```
 
+npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所以还有一层兜底：**在该仓库里第一次跑任何一关**（比如 `signoff p5 README.md`）会自动把五关装好。
+要放行安装脚本就加 `npm i -g dsh-signoff --allow-scripts=dsh-signoff`。
+
 行为约定：
 
 - 已 opt-in（有 `.signoff/config.json`）：pre-commit 跑全套五关，PASS 才写 marker 和 trailer。
@@ -247,6 +250,9 @@ One command, then nothing: `npm i -g dsh-signoff` writes a machine-wide `core.ho
 | machine | postinstall of the global install | every repo on this machine, including fresh clones |
 | repo | postinstall inside a repo, or `signoff ensure` | `.git/hooks`, `.signoff/config.json`, CI workflow, ledger |
 | gates | every commit | opted-in repos run all five; unopted repos run only P1 (tests), and write no state |
+
+npm 11 may hold `postinstall` behind its script allowlist (`--allow-scripts=dsh-signoff` to allow it), so the
+first gate command in a repo (`signoff p5 README.md`) installs the five gates as a fallback.
 
 Exit hatches: `SIGNOFF_NO_BOOTSTRAP=1` (no auto install), `SIGNOFF_NO_MACHINE=1` (skip the light guard),
 `signoff uninstall --global` (remove the machine layer). A repo's own hook always runs first and keeps its verdict.

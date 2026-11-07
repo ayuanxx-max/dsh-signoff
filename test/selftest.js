@@ -25,7 +25,8 @@ function run(args, cwd, env) {
   return spawnSync(process.execPath, [CLI, ...args], {
     cwd,
     encoding: "utf8",
-    env: { ...process.env, SIGNOFF_HOME: HOME, ...(env || {}) },
+    // Fixtures are not the user's repos: no auto-install unless a test asks for it.
+    env: { ...process.env, SIGNOFF_HOME: HOME, SIGNOFF_NO_BOOTSTRAP: "1", ...(env || {}) },
   });
 }
 
@@ -722,13 +723,13 @@ function main() {
       git(["config", "user.name", "t"], repo, env);
       fs.writeFileSync(path.join(repo, "README.md"), "# fixture\n", "utf8");
 
-      const first = run(["ensure"], repo, env);
+      const first = run(["ensure"], repo, { ...env, SIGNOFF_NO_BOOTSTRAP: "0" });
       check("ensure exit code", first.status, 0);
       check("ensure writes the pre-commit hook", fs.existsSync(path.join(repo, ".git", "hooks", "pre-commit")), true);
       check("ensure writes config.json", fs.existsSync(path.join(repo, ".signoff", "config.json")), true);
       check("ensure writes installed.json", fs.existsSync(path.join(repo, ".signoff", "installed.json")), true);
 
-      const second = JSON.parse(run(["ensure", "--json"], repo, env).stdout);
+      const second = JSON.parse(run(["ensure", "--json"], repo, { ...env, SIGNOFF_NO_BOOTSTRAP: "0" }).stdout);
       check("ensure is idempotent", second.repo.installed, false);
       check("ensure reports the repo guarded", second.repo.ok, true);
 
