@@ -160,6 +160,41 @@ signoff1:12:9f2c1ab34d0e:71b0c9d2e4a85f61
 事后 `signoff p4 verify --checkpoint --anchor <那一行>` 能分辨四种情况：账本被截断、内容被改、
 签名不属于受信 key、锚点与本机不一致。细节与边界（它不证明什么）见 [docs/trust.md](docs/trust.md)。
 
+3.15.2 起还补了三件事：`signoff p4 path` 打印账本与检查点的真实位置（脚本不用猜）；
+guard 通过后**自动续签**检查点（同一份账本不重复签，不产生无意义改动）；账本读取容忍 BOM
+（Windows 编辑器与 `Set-Content -Encoding utf8` 的常见产物）。
+
+### 能力矩阵与匿名竞品（3.15.2）
+
+同一张表看"谁有什么"。竞品按类型匿名（不点名，避免把对比写成广告），对应关系与星标/下载数据
+记录在 [`docs/signoff-positioning-3.15.2.md`](../docs/signoff-positioning-3.15.2.md)。
+
+| 能力 | 落印 | 竞品A 平台级 | 竞品B 钩子框架 | 竞品C 密钥扫描 | 竞品D 文本规则 | 竞品E 供应链证明 | 竞品F 覆盖率 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 测试真的跑过（预算 + 用例数） | 有 | 有 | 无（只负责触发） | 无 | 无 | 无 | 无 |
+| 增量覆盖率分级 | 有 | 有 | 无 | 无 | 无 | 无 | 有 |
+| 密钥扫描 | 有 | 有 | 无 | 有 | 无 | 无 | 无 |
+| 中文文档空话规则 | 有 | 无 | 无 | 无 | 部分（英文词表） | 无 | 无 |
+| 可验签的判决（trailer + key） | 有 | 部分（服务端签名） | 无 | 无 | 无 | 有（attestation） | 无 |
+| 离线账本 + 截断检测 | 有 | 无 | 无 | 无 | 无 | 部分（需 layout/验证器） | 无 |
+| 可发布锚点（一行贴进发版说明） | 有 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 零配置两步上手 | 有 | 无（要服务端 + 项目配置） | 部分（需已有 Node/Python 项目） | 有 | 有 | 无（要密钥与 layout） | 有 |
+| 托管看板 / PR 状态回写 | 无 | 有 | 无 | 无 | 无 | 无 | 无 |
+
+结论放在表后面而不是前面：**前七行是它和其他工具的分野，最后两行是它的短板**——托管面没有，
+生态采用量也还没起来（1 star、周下载三位数），所以六维里"生态"给 3 分，不是 5 分。
+
+![落印 3.15.2 执行流程与四层证据](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-4-flow.png)
+
+上图是一次提交的完整路径：入口（git commit / 命令 / CI）→ 三层零接触 → guard 固定顺序跑
+secrets → p5 → p1 → p2 → p4 → cov（opt-in）→ 判决 → 四层证据（marker → trailer → 账本 →
+检查点 → 锚点）。红一关即停，退出码就是判决。
+
+![落印 3.15.2 与匿名竞品：覆盖广度 vs 生态采用度](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-5-competitors.png)
+
+上图横轴是生态采用度，纵轴是覆盖广度。落印落在左上角——**功能全、采用低**，这是它的真实位置：
+它不在右上角跟平台级产品比采用，差异在"判决可以带走、可以事后核对"。
+
 ### 规则包、预设与编辑器（3.14.0 起）
 
 - **P5 规则包**：`--pack zh|en|both`。中文词表是默认值，行为不变；`en` 用词边界匹配
@@ -319,6 +354,43 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
 prints one line to publish with the release. `signoff p4 verify --checkpoint --anchor`
 then tells truncation, edits, untrusted keys and anchor drift apart. Scope and limits:
 [docs/trust.md](docs/trust.md).
+
+Since 3.15.2: `signoff p4 path` prints where the ledger and checkpoint actually live (no guessing in
+scripts); a passing guard re-signs the checkpoint (same ledger, same statement, no churn); ledger
+reads tolerate a UTF-8 BOM, which Windows editors and `Set-Content -Encoding utf8` leave behind.
+
+### Capabilities and anonymised peers (3.15.2)
+
+One table for "who has what". Peers are anonymised by category so the comparison reads as a table,
+not an advert; the mapping plus star/download figures live in
+[`docs/signoff-positioning-3.15.2.md`](../docs/signoff-positioning-3.15.2.md).
+
+| Capability | SignOff | Peer A platform | Peer B hooks | Peer C secret scan | Peer D text rules | Peer E supply chain | Peer F coverage |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Tests actually ran (budget + case count) | yes | yes | no (triggers only) | no | no | no | no |
+| Changed-line coverage levels | yes | yes | no | no | no | no | yes |
+| Secret scanning | yes | yes | no | yes | no | no | no |
+| Chinese prose rules | yes | no | no | no | partial (English only) | no | no |
+| Signed verdict (trailer + key) | yes | partial (server side) | no | no | no | yes (attestation) | no |
+| Offline ledger + truncation detection | yes | no | no | no | no | partial (needs layout/verifier) | no |
+| Publishable anchor (one line in release notes) | yes | no | no | no | no | no | no |
+| Two-command, zero-config start | yes | no (server + project config) | partial (needs a Node/Python project) | yes | yes | no (keys + layout) | yes |
+| Hosted dashboard / PR status | no | yes | no | no | no | no | no |
+
+Read the last two rows as the honest part: **no hosted surface, and adoption is still small**
+(1 star, three-digit weekly downloads) — which is why "ecosystem" scores 3, not 5.
+
+![SignOff 3.15.2 flow and four layers of evidence](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-4-flow-en.png)
+
+One commit end to end: entries (git commit / CLI / CI) → three zero-touch layers → guard runs
+secrets → p5 → p1 → p2 → p4 → cov (opt-in) → verdict → four layers of evidence (marker → trailer →
+ledger → checkpoint → anchor). First red stops; the exit code is the verdict.
+
+![SignOff 3.15.2 vs anonymised peers](https://raw.githubusercontent.com/ayuanxx-max/dsh-signoff/master/docs/diagrams/signoff-5-competitors-en.png)
+
+Adoption on the x-axis, coverage breadth on the y. SignOff sits top-left: **full-stack, low adoption**.
+It does not compete on adoption with platform products; the difference is that a verdict can leave
+the machine and still be checked later.
 
 ### Rule packs, presets and editors (since 3.14.0)
 
