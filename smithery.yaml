@@ -9,4 +9,4 @@ startCommand:
         type: string
         description: Repository to run the gates in (defaults to the client's working directory).
   commandFunction: |-
-    (config) => ({ command: "npx", args: ["-y", "@signoff/cli", "mcp"], env: config.cwd ? { SIGNOFF_MCP_CWD: config.cwd } : {} })
+    (config) => ({ command: "npx", args: ["-y", "signoff-cli", "mcp"], env: config.cwd ? { SIGNOFF_MCP_CWD: config.cwd } : {} })

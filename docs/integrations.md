@@ -5,7 +5,7 @@
 ## 1. 本机零接触（最快）
 
 ```bash
-npm i -g @signoff/cli && cd your-repo && signoff init
+npm i -g signoff-cli && cd your-repo && signoff init
 ```
 
 之后 `git commit` 自动过闸。

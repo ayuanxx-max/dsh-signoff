@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// Self-test for @signoff/cli: every gate runs against a throwaway git repo and the
+// Self-test for signoff-cli: every gate runs against a throwaway git repo and the
 // exit code is the assertion. Node only — this is the suite `npm test` runs.
 //   node test/selftest.mjs
 
@@ -71,7 +71,7 @@ function buildRepo(base) {
   w(
     "package.json",
     JSON.stringify(
-      { name: "fixture", version: "0.0.0", devDependencies: { "@signoff/cli": "^4.0.0" } },
+      { name: "fixture", version: "0.0.0", devDependencies: { "signoff-cli": "^4.0.0" } },
       null,
       2
     ) + "\n"
@@ -1148,7 +1148,7 @@ function main() {
       check("pre-commit hook id", /id: signoff-guard/.test(hooks), true);
       check("pre-commit hook entry", /entry: signoff guard/.test(hooks), true);
       const action = fs.readFileSync(path.join(__dirname, "..", "action.yml"), "utf8");
-      check("action installs the cli", /npm i -g @signoff\/cli/.test(action), true);
+      check("action installs the cli", /npm i -g signoff-cli/.test(action), true);
 
 // 17. package rename (4.0.0): new mark written, legacy mark still ours
 const bootlib = require(path.join(__dirname, "..", "lib", "bootstrap.js"));

@@ -1,6 +1,6 @@
 # 落印 / SignOff
 
-> **包名 4.0.0 起为 `@signoff/cli`**（曾用名 `dsh-signoff`，旧包已标记 deprecated）。
+> **包名 4.0.0 起为 `signoff-cli`**（曾用名 `dsh-signoff`，旧包已标记 deprecated）。
 > 命令仍是 `signoff`；仓库地址仍是 `ayuanxx-max/dsh-signoff`。DSH 只是它最早的使用场景，
 > 任意 git 仓库、任意语言都可以直接用。
 
@@ -11,7 +11,7 @@
 五道关卡，五条命令，退出码即判决。每一关都对应 agent 交付时的一种失败方式：靠记忆跑测试、把“有开发页”当验证、多个 agent 撞同一文件、危险动作做过就忘、文档里塞空话。SignOff 把这五种失败变成五个可执行的检查。
 
 ```bash
-npm i -g @signoff/cli      # 或 npx @signoff/cli
+npm i -g signoff-cli      # 或 npx signoff-cli
 signoff p1                # 一关一关过
 signoff all               # p1 + p2 + p5 + p4 verify
 ```
@@ -46,7 +46,7 @@ signoff all               # p1 + p2 + p5 + p4 verify
 
 ## 零接触：装一次，之后不用管
 
-目标是一条命令之后不再需要任何操作：`npm i -g @signoff/cli` 装完即生效，之后每次 `git commit` 都自动受五关约束。
+目标是一条命令之后不再需要任何操作：`npm i -g signoff-cli` 装完即生效，之后每次 `git commit` 都自动受五关约束。
 
 | 层 | 什么时候发生 | 覆盖范围 |
 | --- | --- | --- |
@@ -56,14 +56,14 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | 关内 | 每次 commit | 已 opt-in 的仓库跑 P1–P5；未 opt-in 的仓库只跑 P1（测试必须过），不写任何状态 |
 
 ```bash
-npm i -g @signoff/cli      # 一次；postinstall 自动装好机器层 + 当前仓库
+npm i -g signoff-cli      # 一次；postinstall 自动装好机器层 + 当前仓库
 signoff ensure            # 换个仓库想把五关都装上，跑这一条（幂等）
 signoff ensure --global   # 只重装/修复机器层
 signoff ensure --json     # 给脚本看的结构化结果
 ```
 
 npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所以还有一层兜底：**在该仓库里第一次跑任何一关**（比如 `signoff p5 README.md`）会自动把五关装好。
-要放行安装脚本就加 `npm i -g @signoff/cli --allow-scripts=dsh-signoff`。
+要放行安装脚本就加 `npm i -g signoff-cli --allow-scripts=dsh-signoff`。
 
 行为约定：
 
@@ -100,7 +100,7 @@ npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所�
 | `.git/hooks/pre-commit` | 暂存区一变就跑闸门：文档改动 → P5；能探到测试命令 → P1；有 `verify/scenarios/` → P2 `--strict`；有账本 → P4 `verify`。红了直接拒绝提交 |
 | `.git/hooks/pre-push` | push 前跑同一套（`--full`，不吃缓存） |
 | `.git/hooks/commit-msg` | 把 `Signoff-Pass: <tree>`（跳过时 `Signoff-Skip:`）写进提交信息；`signoff audit` 与 CI 据此判断这次提交真的过过闸门 |
-| `.github/workflows/signoff.yml` | 每个 push / PR 跑 `npx @signoff/cli guard --ci`，绕不过去 |
+| `.github/workflows/signoff.yml` | 每个 push / PR 跑 `npx signoff-cli guard --ci`，绕不过去 |
 | `.signoff/config.json` | 测试命令、预算、文档目录；`signoff status` 随时查看 |
 | `.gitignore` | 追加 `.signoff/`，结果不进版本库 |
 
@@ -110,7 +110,7 @@ npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所�
 
 **绕过的路仍然有，但不再无痕**：`signoff audit --range origin/main..HEAD` 逐个提交核对标记与提交树——缺失就是绕过（`git commit --no-verify`），判红；`SIGNOFF_SKIP=1` 的提交写成 `Signoff-Skip:` 并记进 `.signoff/skips.log`，`--strict` 下同样判红。生成的 CI 里已经带这一步。
 
-**队友为什么也会被守住**：先把 `dsh-signoff` 放进 `devDependencies`（`npm i -D @signoff/cli`），再 `signoff init --prepare`，它会把 `signoff init --quiet` 并进 `package.json` 的 `prepare`，队友 `npm install` 完钩子就有了。没这个依赖时 `--prepare` 会拒绝写入并提示——否则 `npm install` 会因为找不到 CLI 直接失败。
+**队友为什么也会被守住**：先把 `dsh-signoff` 放进 `devDependencies`（`npm i -D signoff-cli`），再 `signoff init --prepare`，它会把 `signoff init --quiet` 并进 `package.json` 的 `prepare`，队友 `npm install` 完钩子就有了。没这个依赖时 `--prepare` 会拒绝写入并提示——否则 `npm install` 会因为找不到 CLI 直接失败。
 
 ```bash
 signoff init                 # 装钩子 + CI + 配置
@@ -266,7 +266,7 @@ signoff p5 docs README.md
 
 ## 接入方式
 
-- **CLI**（本体）：`npm i -g @signoff/cli`，任何能起进程的地方都能调，退出码即判决。
+- **CLI**（本体）：`npm i -g signoff-cli`，任何能起进程的地方都能调，退出码即判决。
 - **技能**：`integrations/skill/SKILL.md`，把“退出码是判决、不许绕过、先 doctor 再 explain”教给 agent。
 - **MCP 服务器**：`npx -y dsh-signoff mcp`（或 `integrations/mcp/server.js`），给 Claude Desktop / DSH / IDE 用，五个工具，`isError` 跟随退出码；官方 MCP Registry 条目为 `io.github.ayuanxx-max/signoff`。
 - **宿主插件**：可行但不推荐（只有要画 UI 时才值得），理由见 [docs/integrations.md](docs/integrations.md)。
@@ -296,7 +296,7 @@ signoff p5 docs README.md
 
 ### Package name (since 4.0.0)
 
-The package is `@signoff/cli`; the former name `dsh-signoff` is deprecated. The command
+The package is `signoff-cli`; the former name `dsh-signoff` is deprecated. The command
 stays `signoff`, the repository stays `ayuanxx-max/dsh-signoff`, and nothing about the tool
 is DSH-specific — any git repo and any language work.
 
@@ -416,7 +416,7 @@ the machine and still be checked later.
 
 ### Zero-touch
 
-One command, then nothing: `npm i -g @signoff/cli` writes a machine-wide `core.hooksPath`
+One command, then nothing: `npm i -g signoff-cli` writes a machine-wide `core.hooksPath`
 (`~/.signoff/hooks`) and bootstraps the repo it is installed from.
 
 | Layer | When | Scope |
@@ -458,7 +458,7 @@ One line: **P2 decides whether it is fixed, P5 decides whether I am overclaiming
 | `.git/hooks/pre-commit` | On a change to the index: docs → P5; detectable test command → P1; `verify/scenarios/` → P2 `--strict`; existing ledger → P4 `verify`. A red gate refuses the commit |
 | `.git/hooks/pre-push` | The same set before a push, `--full`, no cache |
 | `.git/hooks/commit-msg` | Writes `Signoff-Pass: <tree>` (or `Signoff-Skip:`) into the message; `signoff audit` and CI use it to tell a gated commit from a bypass |
-| `.github/workflows/signoff.yml` | Every push / PR runs `npx @signoff/cli guard --ci`; not bypassable |
+| `.github/workflows/signoff.yml` | Every push / PR runs `npx signoff-cli guard --ci`; not bypassable |
 | `.signoff/config.json` | Test command, budget, doc roots; `signoff status` shows all of it |
 | `.gitignore` | `.signoff/` is appended, so results stay out of the repo |
 
@@ -468,7 +468,7 @@ Three stability measures: the same staged tree is judged once (cache hit ~0 ms, 
 
 **A bypass leaves a trace**: `signoff audit --range origin/main..HEAD` checks every commit's marker against its tree. Missing means the gates were skipped (`git commit --no-verify`) and is red; a `SIGNOFF_SKIP=1` commit carries `Signoff-Skip` and turns red under `--strict`. The generated CI already runs this step.
 
-**Why a teammate ends up guarded too**: with `dsh-signoff` in `devDependencies` (`npm i -D @signoff/cli`), `signoff init --prepare` appends `signoff init --quiet` to `package.json`'s `prepare`, so their `npm install` installs the hooks; without it, CI is the backstop.
+**Why a teammate ends up guarded too**: with `dsh-signoff` in `devDependencies` (`npm i -D signoff-cli`), `signoff init --prepare` appends `signoff init --quiet` to `package.json`'s `prepare`, so their `npm install` installs the hooks; without it, CI is the backstop.
 
 ### Beyond this fix: other code work
 
@@ -523,7 +523,7 @@ signoff p5 docs README.md
 
 ### Integrations
 
-- **CLI** (the product): `npm i -g @signoff/cli`; anything that can spawn a process can run
+- **CLI** (the product): `npm i -g signoff-cli`; anything that can spawn a process can run
   it, and the exit code is the verdict.
 - **Skill**: `integrations/skill/SKILL.md` teaches an agent the three things it gets wrong:
   the exit code is the verdict, never bypass a red gate, and `doctor`/`explain` come before

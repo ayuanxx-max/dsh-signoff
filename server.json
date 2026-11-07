@@ -10,7 +10,7 @@
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@signoff/cli",
+      "identifier": "signoff-cli",
       "version": "3.9.4",
       "runtimeHint": "npx",
       "transport": {
