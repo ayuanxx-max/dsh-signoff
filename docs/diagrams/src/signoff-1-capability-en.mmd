@@ -4,7 +4,7 @@ title: SignOff capabilities and relations (v3.9.7)
 flowchart LR
   subgraph L1["① Entry · who calls it"]
     direction TB
-    A1["CLI<br/>run · p1..p5 · init · status · doctor<br/>audit · explain · mcp · uninstall<br/>--json · --strict · --dry-run · --chain"]
+    A1["CLI<br/>run · p1..p5 · init · status · doctor<br/>audit · explain · release · mcp · uninstall<br/>--json · --strict · --dry-run · --chain"]
     A2["Git hooks<br/>pre-commit runs the gates<br/>commit-msg checks the trailer<br/>pre-push checks the audit window<br/>existing hooks chained as .local"]
     A3["CI · signoff.yml<br/>same gates, second run<br/>fetch-depth 0 required for audit"]
     A4["Agents<br/>5 MCP tools · one skill<br/>isError mirrors the exit code"]

@@ -26,3 +26,9 @@ Smoke test without an MCP client:
 printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | node integrations/mcp/server.js
 ```
+
+
+`signoff release --pre|--post` guards the artifact itself: it packs the tarball, installs it into a
+temporary directory, runs `--version`, and completes an `mcp` initialize handshake (`--post` then checks
+npm, the registry entry and README links). Since 4.1.2 `integrations/` ships inside the npm package, so
+`signoff mcp` works from any installed copy - before that it was `MODULE_NOT_FOUND`.

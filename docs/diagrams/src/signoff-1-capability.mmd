@@ -4,7 +4,7 @@ title: SignOff 完整能力与关系（v3.9.7）
 flowchart LR
   subgraph L1["① 入口层 · 谁在调用它"]
     direction TB
-    A1["CLI<br/>run · p1..p5 · init · status · doctor<br/>audit · explain · mcp · uninstall<br/>--json · --strict · --dry-run · --chain"]
+    A1["CLI<br/>run · p1..p5 · init · status · doctor<br/>audit · explain · release · mcp · uninstall<br/>--json · --strict · --dry-run · --chain"]
     A2["Git 钩子<br/>pre-commit 跑闸门<br/>commit-msg 查 trailer<br/>pre-push 查审计窗口<br/>已有钩子链式为 .local"]
     A3["CI · signoff.yml<br/>同一套闸门再跑一遍<br/>fetch-depth 0 才能审计"]
     A4["Agent 面<br/>MCP 五工具 · 技能<br/>isError 跟随退出码"]

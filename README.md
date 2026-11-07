@@ -4,11 +4,12 @@
 > 命令仍是 `signoff`；仓库地址仍是 `ayuanxx-max/signoff-cli`。DSH 只是它最早的使用场景，
 > 任意 git 仓库、任意语言都可以直接用。
 
-> 中文名「落印」：印落纸面才算数，对应英文名 SignOff。曾用名「一诺过五关」「执印」。命令 `signoff`、包名 `dsh-signoff` 不变。
+> 中文名「落印」：印落纸面才算数，对应英文名 SignOff。曾用名「一诺过五关」「执印」。命令是 `signoff`；
+> 包名 4.0.0 起为 `signoff-cli`，仓库 4.1.0 起为 `ayuanxx-max/signoff-cli`（由 `dsh-signoff` 改名，老地址 301）。
 
 > 签下的那句“做完了”，得自己走过五道关才算数。
 
-五道关卡，五条命令，退出码即判决。每一关都对应 agent 交付时的一种失败方式：靠记忆跑测试、把“有开发页”当验证、多个 agent 撞同一文件、危险动作做过就忘、文档里塞空话。SignOff 把这五种失败变成五个可执行的检查。
+五道关卡，五条命令，退出码即判决；发版另加第六道 `signoff release`（[见文末](#发布闸门signoff-release)）。每一关都对应 agent 交付时的一种失败方式：靠记忆跑测试、把“有开发页”当验证、多个 agent 撞同一文件、危险动作做过就忘、文档里塞空话。SignOff 把这五种失败变成五个可执行的检查。
 
 ```bash
 npm i -g signoff-cli      # 或 npx signoff-cli
@@ -188,7 +189,7 @@ guard 通过后**自动续签**检查点（同一份账本不重复签，不产�
 结论放在表后面而不是前面：**前七行是它和其他工具的分野，最后两行是它的短板**——托管面没有，
 生态采用量也还没起来（1 star、周下载三位数），所以六维里"生态"给 3 分，不是 5 分。
 
-![落印 3.15.2 执行流程与四层证据](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-4-flow.png)
+![落印 4.1.2 执行流程与四层证据](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-4-flow.png)
 
 上图是一次提交的完整路径：入口（git commit / 命令 / CI）→ 三层零接触 → guard 固定顺序跑
 secrets → p5 → p1 → p2 → p4 → cov（opt-in）→ 判决 → 四层证据（marker → trailer → 账本 →
@@ -273,6 +274,20 @@ signoff p5 docs README.md
 
 推广与可发现性的现状和做法见 [docs/promotion.md](docs/promotion.md)。
 
+## 发布闸门（signoff release）
+
+`p1..p5` 检查的是工作树，`signoff release` 检查的是**发布物**——这一段过去没有任何闸门覆盖，于是
+注册表清单能把 `packages[].version` 钉在 3.9.4 上继续发布 40 个版本没有被发现。
+
+```powershell
+signoff release --pre    # 发布前：清单自洽 + 打包 + 装到临时目录 + --version + mcp 握手（14 项）
+signoff release --post   # 发布后：npm latest、注册表 isLatest / packages[].version、README 图链
+```
+
+它第一次运行就抓到一个真缺陷：`files[]` 漏了 `integrations/`，导致 3.9.3 起所有安装形态的
+`signoff mcp` 都是 `MODULE_NOT_FOUND`，而注册表恰好教人用 `npx signoff-cli mcp`。现在 `integrations/`
+已进包，`--pre` 为 14/14。
+
 ## 六、边界（先说清不做什么）
 
 - **只读不改**：五关不改你的代码，只在 `.signoff/`（P4 账本也在这里；非仓库目录才用 `~/.signoff/`）写结果。
@@ -296,16 +311,16 @@ signoff p5 docs README.md
 
 ### Package name (since 4.0.0)
 
-The package is `signoff-cli`; the former name `dsh-signoff` is deprecated. The command
-stays `signoff`, the repository stays `ayuanxx-max/signoff-cli`, and nothing about the tool
-is DSH-specific — any git repo and any language work.
+The package is `signoff-cli`; the former name `dsh-signoff` is deprecated. The command stays
+`signoff`; the repository is `ayuanxx-max/signoff-cli` since 4.1.0 (renamed from `dsh-signoff`,
+old URLs 301). Nothing about the tool is DSH-specific — any git repo and any language work.
 
 ### At a glance (English)
 
 ![SignOff capabilities and relations](https://raw.githubusercontent.com/ayuanxx-max/signoff-cli/master/docs/diagrams/signoff-1-capability-en.png)
 
 Six layers, left to right: **entry** (CLI / git hooks / CI / agents) all go through one `guard.js`; **dispatcher**
-decides which gates run and what counts as pass; **the five gates** each state read → decide → fix; **the state
+decides which gates run and what counts as pass; **the five gates** (plus `release`, which guards what you publish) each state read → decide → fix; **the state
 machine** shows how the marker and the trailer appear inside a single commit; **artifacts** are the evidence a
 verdict leaves behind; **external dependencies** — only Node ≥18 and git are hard requirements.
 There is no partial pass: exit 0 pass, 1 any gate red, 2 usage or environment error.
@@ -322,7 +337,7 @@ thresholds to turn red green).
 
 > "Done" is a promise. SignOff makes it walk through five gates before anyone signs it.
 
-Five gates, five commands, the exit code is the verdict. Each gate maps to one way agent work goes wrong: tests run from memory, a dev page mistaken for verification, parallel workers colliding on the same file, risky actions nobody recorded, documents padded with empty words.
+Five gates, five commands, the exit code is the verdict; publishing adds a sixth, `signoff release`. Each gate maps to one way agent work goes wrong: tests run from memory, a dev page mistaken for verification, parallel workers colliding on the same file, risky actions nobody recorded, documents padded with empty words.
 
 | Gate | Command | What it decides |
 | --- | --- | --- |
@@ -535,24 +550,6 @@ signoff p5 docs README.md
 
 Discovery and promotion notes: [docs/promotion.md](docs/promotion.md).
 
-## License
-
-MIT
-
-## 发布闸门（signoff release）
-
-`p1..p5` 检查的是工作树，`signoff release` 检查的是**发布物**——这一段过去没有任何闸门覆盖，于是
-注册表清单能把 `packages[].version` 钉在 3.9.4 上继续发布 40 个版本没有被发现。
-
-```powershell
-signoff release --pre    # 发布前：清单自洽 + 打包 + 装到临时目录 + --version + mcp 握手（14 项）
-signoff release --post   # 发布后：npm latest、注册表 isLatest / packages[].version、README 图链
-```
-
-它第一次运行就抓到一个真缺陷：`files[]` 漏了 `integrations/`，导致 3.9.3 起所有安装形态的
-`signoff mcp` 都是 `MODULE_NOT_FOUND`，而注册表恰好教人用 `npx signoff-cli mcp`。现在 `integrations/`
-已进包，`--pre` 为 14/14。
-
 ### Release gate (English)
 
 `p1..p5` read the working tree; `signoff release` reads the published artifact. `--pre` runs offline
@@ -560,3 +557,7 @@ signoff release --post   # 发布后：npm latest、注册表 isLatest / package
 14 checks); `--post` runs after publish and verifies npm `dist-tags.latest`, the MCP registry entry, and
 every README image URL. Its first run found that `files[]` omitted `integrations/`, so every installed
 copy since 3.9.3 had a `signoff mcp` that failed with `MODULE_NOT_FOUND`.
+
+## License
+
+MIT

@@ -53,3 +53,5 @@ rewrites the hooks and the recorded version.
 
 Report the gate ids and their verdicts, plus the exact command that produced them.
 "Tests pass" without the gate output is not a report; `signoff run` exiting 0 is.
+
+- `signoff release --pre|--post` — 发布闸门：打包、装到临时目录、`--version`、`mcp` 握手；发布后核 npm/注册表/README 链接。- 4.1.2 起 `integrations/` 打进 npm 包，`signoff mcp` 从安装态可直接用。

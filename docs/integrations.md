@@ -55,4 +55,10 @@ signoff init --editor vscode
 
 ## MCP
 
-`io.github.ayuanxx-max/signoff` 已在 MCP Registry，可被支持 MCP 的客户端直接调用。
+`io.github.ayuanxx-max/signoff-cli` 已在 MCP Registry（4.1.0 随仓库改名迁移），可被支持 MCP 的客户端直接调用。
+旧条目 `io.github.ayuanxx-max/signoff` 冻结在 4.0.2，其 3.9.4–3.15.3 历史条目都指向 npm 包 3.9.4，别再按它装。
+
+
+- `signoff release --pre|--post`：发布闸门。`--pre` 打包、装进临时目录、跑 `--version`、完成 `mcp` 握手；
+  `--post` 核 npm latest、注册表 `isLatest` / `packages[].version`、README 图链。4.1.2 起 `integrations/`
+  随包发布，`signoff mcp` 从安装态即可用（此前是 `MODULE_NOT_FOUND`）。

@@ -1,3 +1,13 @@
+## 4.1.3
+
+**中英文说明文档对齐 4.1.x 的事实。**
+
+- README 中英双语：包名/仓库名口径统一（`signoff-cli`，仓库 4.1.0 起改名、老地址 301）；五关的承诺旁边
+  写明"发版另加第六道 `signoff release`"；发布闸门章节移到各自语言的正文里（原先挂在 License 之后）。
+- 能力图（中/英）的 CLI 入口补上 `release`，两张图重新渲染。
+- `docs/integrations.md` 的注册表名改为 `io.github.ayuanxx-max/signoff-cli`，并标注旧条目的 3.9.4 指向问题。
+- `integrations/mcp/README.md` 说明 4.1.2 起 `integrations/` 随包发布，`signoff mcp` 安装后即可用。
+
 ## 4.1.2
 
 **新增 `signoff release`：闸门第一次覆盖到"发布物"，它第一次运行就抓到一个真缺陷。**
