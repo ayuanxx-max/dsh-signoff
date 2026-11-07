@@ -1,3 +1,11 @@
+## 4.0.1
+
+**修 4.0.0 的 npx 入口：`npx signoff-cli` 找不到可执行文件。**
+
+- `bin` 增加同名别名 `signoff-cli`，`npx signoff-cli` 直接可用。
+- 生成的 CI workflow 改成 `npx --yes --package=signoff-cli@latest signoff ...`，不依赖 bin 名与包名一致。
+- 4.0.0 的 `npm i -g` 与本地命令本身正常，只有 npx 这条路径坏。
+
 ## 4.0.0
 
 **改名：`dsh-signoff` → `signoff-cli`。命令 `signoff`、仓库地址、功能集都不变。**

@@ -11,7 +11,7 @@ jobs:
         with: { node-version: "20" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: npx --yes signoff-cli@latest guard --ci
+      - run: npx --yes --package=signoff-cli@latest signoff guard --ci
       - name: audit trailers
         env:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
@@ -24,7 +24,7 @@ jobs:
             BASE=$(git rev-parse --verify --quiet "HEAD~1^{commit}" || true)
           fi
           if [ -n "$BASE" ]; then
-            npx --yes signoff-cli@latest audit --range "$BASE..HEAD"
+            npx --yes --package=signoff-cli@latest signoff audit --range "$BASE..HEAD"
           else
             echo "no base commit in this clone; skipping the trailer audit"
           fi
