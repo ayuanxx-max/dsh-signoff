@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>SignOff 能力与关系</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px 28px 30px; width:1520px; background:#f7f8fa;
+         font-family:"Microsoft YaHei","Segoe UI",sans-serif; color:#1d2129; }
+  h1 { font-size:22px; margin:0 0 2px; letter-spacing:.5px; }
+  .sub { color:#697386; font-size:12.5px; margin-bottom:16px; }
+  .band { border-radius:10px; padding:12px 14px 14px; margin-bottom:12px; background:#fff;
+          border:1px solid #dfe3ea; box-shadow:0 1px 2px rgba(20,30,50,.04); }
+  .band h2 { font-size:13px; margin:0 0 10px; color:#4b5563; font-weight:600;
+             letter-spacing:1px; text-transform:uppercase; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .box { flex:1 1 0; min-width:150px; border-radius:8px; padding:9px 11px; font-size:12px;
+         line-height:1.5; background:#fbfcfe; border:1px solid #dbe1ea; }
+  .box b { display:block; font-size:12.5px; margin-bottom:3px; }
+  .box code { font-family:Consolas,monospace; font-size:11px; color:#1f4e8c; background:#eef3fb;
+              padding:0 3px; border-radius:3px; }
+  .entry { border-left:4px solid #2f6fdd; }
+  .gate { border-left:4px solid #0e9f6e; }
+  .core { border-left:4px solid #b45309; }
+  .data { border-left:4px solid #7c3aed; }
+  .ext  { border-left:4px solid #6b7280; }
+  .arrow { text-align:center; color:#9aa4b2; font-size:15px; margin:-2px 0 6px; letter-spacing:4px; }
+  .legend { display:flex; gap:16px; font-size:11.5px; color:#5b6474; margin-top:6px; }
+  .legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; }
+  .note { font-size:11.5px; color:#6b7280; margin-top:8px; line-height:1.6; }
+  .chain { font-size:11px; color:#475569; background:#f1f5f9; border-radius:6px;
+           padding:6px 9px; font-family:Consolas,monospace; }
+</style></head><body>
+<h1>SignOff（落印）能力与关系图</h1>
+<div class="sub">v3.9.4 · 四个入口同一内核 · 退出码即判决 · 账本记录“谁真的过了闸门”</div>
+
+<div class="band">
+  <h2>① 入口层 · 谁在调用</h2>
+  <div class="row">
+    <div class="box entry"><b>CLI</b><code>run</code> <code>p1..p5</code> <code>init</code> <code>status</code> <code>doctor</code> <code>audit</code> <code>explain</code> <code>mcp</code> <code>uninstall</code></div>
+    <div class="box entry"><b>Git 钩子</b>pre-commit / commit-msg / pre-push<br>已有钩子可链式：<code>&lt;name&gt;.local[.sh|.py|.js|.ps1|.cmd]</code></div>
+    <div class="box entry"><b>CI</b><code>.github/workflows/signoff.yml</code><br>同一套闸门再跑一遍，<code>fetch-depth: 0</code></div>
+    <div class="box entry"><b>Agent 面</b>MCP 服务器（5 工具）<br>技能 <code>SKILL.md</code>（只教模型别做错的三件事）</div>
+  </div>
+</div>
+<div class="arrow">▼ ▼ ▼ ▼</div>
+
+<div class="band">
+  <h2>② 内核层 · 判定怎么发生</h2>
+  <div class="row">
+    <div class="box core" style="flex:0 0 210px"><b>guard.js 分发器</b>选关 · 取锁 · 收集各关结果 · 决定退出码（0 通过 / 1 判红 / 2 用法环境）</div>
+    <div class="box gate"><b>P1 测试</b>识别到的测试命令退出码非 0 即红<br><span style="color:#6b7280">config → package.json → vitest/jest/mocha → cargo/go/make → pytest</span></div>
+    <div class="box gate"><b>P2 覆盖</b>场景数 / 断言数低于阈值即红，<code>--strict</code> 额外抓“声称成功却无断言”</div>
+    <div class="box gate"><b>P3 队列</b>读 <code>tasks/&lt;id&gt;/card.json</code>，状态不是 <code>done</code> 即红</div>
+    <div class="box gate"><b>P4 账本</b>哈希链断裂、回滚点提交消失即红；审计提交里有没有 Signoff trailer</div>
+    <div class="box gate"><b>P5 反空话</b>新增文档里的占位符与无证据结论（占位符按词边界，避免误伤中文复合词）</div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <div class="box core" style="flex:1 1 0"><b>共享底座 core.js</b>配置解析 · 状态目录 <code>.signoff/</code> · <code>--json</code> · 退出码约定 · 路径归一</div>
+    <div class="box core" style="flex:1 1 0"><b>锁</b><code>.signoff/lock/</code> 目录 + <code>owner.json</code>（mkdir 原子）<br>陈旧判定：进程已死 或 &gt;10 分钟；等待 <code>SIGNOFF_LOCK_WAIT_MS</code>（默认 8 s）</div>
+    <div class="box core" style="flex:1 1 0"><b>说明即代码</b><code>explain p1..p5</code> 的文本与判定逻辑写在同一份 map 里，改逻辑必须改说明</div>
+  </div>
+</div>
+<div class="arrow">▼</div>
+
+<div class="band">
+  <h2>③ 数据层 · 留在仓库里的东西</h2>
+  <div class="row">
+    <div class="box data"><b>config.json</b>阈值、<code>test_cmd</code>、开关</div>
+    <div class="box data"><b>installed.json</b>安装点 sha/时间/版本 —— 审计窗口的左边界</div>
+    <div class="box data"><b>passed</b><code>{tree, mode: pass|skip, ts}</code>，tree 变了就失效</div>
+    <div class="box data"><b>audit.log</b>只追加哈希链：谁、何时、什么判决、回滚点</div>
+    <div class="box data"><b>p3.json / skips</b>队列快照；<code>SIGNOFF_SKIP=1</code> 的留痕</div>
+  </div>
+  <div class="note">提交信息里的 <code>Signoff-Pass: &lt;tree&gt;</code> 是“这份树真的过过闸门”的唯一凭证；<code>--no-verify</code> 不留痕，审计里就是 <code>missing</code>。</div>
+</div>
+
+<div class="band">
+  <h2>④ 外部依赖 · 只有这两样是硬要求</h2>
+  <div class="row">
+    <div class="box ext"><b>Node ≥ 18</b>全部逻辑纯 JS，无构建、无原生模块</div>
+    <div class="box ext"><b>git</b>钩子、审计窗口、祖先校验</div>
+    <div class="box ext"><b>测试运行器</b>仓库自己的那一套；没有则退化为 <code>python -m unittest discover</code> 等后备</div>
+    <div class="box ext"><b>Python（仅对等测试）</b><code>gates/</code> 参考实现，运行时永不调用</div>
+    <div class="box ext"><b>GitHub Actions</b>可选，<code>--no-ci</code> 可跳过</div>
+  </div>
+  <div class="legend"><span><i style="background:#2f6fdd"></i>入口</span><span><i style="background:#0e9f6e"></i>五关</span><span><i style="background:#b45309"></i>内核</span><span><i style="background:#7c3aed"></i>数据</span><span><i style="background:#6b7280"></i>外部</span></div>
+</div>
+</body></html>

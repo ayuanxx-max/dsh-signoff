@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>SignOff 用户视角</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 28px 30px; width:1520px; background:#f7f8fa;
+         font-family:"Microsoft YaHei","Segoe UI",sans-serif; color:#1d2129; }
+  h1 { font-size:22px; margin:0 0 2px; }
+  .sub { color:#697386; font-size:12.5px; margin-bottom:16px; }
+  .top { display:flex; gap:14px; align-items:flex-start; }
+  .who { flex:0 0 168px; background:#0f172a; color:#e8eefc; border-radius:12px; padding:16px;
+         text-align:center; }
+  .who .big { font-size:16px; font-weight:600; }
+  .who small { display:block; color:#93a4c4; font-size:11px; margin-top:6px; line-height:1.6; }
+  .branches { flex:1 1 0; display:flex; flex-direction:column; gap:9px; }
+  .br { background:#fff; border:1px solid #dfe3ea; border-left:4px solid #2f6fdd; border-radius:9px;
+        padding:9px 12px; font-size:12px; line-height:1.6; }
+  .br b { font-size:12.5px; }
+  .br code { font-family:Consolas,monospace; font-size:11px; background:#eef3fb; color:#1f4e8c;
+             padding:0 3px; border-radius:3px; }
+  .br .muted { display:block; color:#6b7280; font-size:11px; margin-top:4px; line-height:1.7; }
+  .br.b2 { border-left-color:#0e9f6e; } .br.b3 { border-left-color:#7c3aed; }
+  .br.b4 { border-left-color:#d97706; } .br.b5 { border-left-color:#6b7280; }
+  .grid3 { display:flex; gap:12px; margin-top:14px; align-items:flex-start; }
+  .panel { flex:1 1 0; background:#fff; border:1px solid #dfe3ea; border-radius:10px; padding:12px; }
+  .panel h2 { font-size:12px; margin:0 0 9px; letter-spacing:1px; text-transform:uppercase; color:#4b5563; }
+  table { width:100%; border-collapse:collapse; font-size:11.5px; }
+  th,td { text-align:left; padding:5px 6px; border-bottom:1px solid #eef1f5; vertical-align:top; line-height:1.5; }
+  th { color:#6b7280; font-weight:600; font-size:10.5px; letter-spacing:.5px; text-transform:uppercase; }
+  td.k { color:#111827; font-weight:600; white-space:nowrap; }
+  .fix { color:#166534; }
+  .risk { color:#92400e; }
+</style></head><body>
+<h1>用户视角：安装、使用、以及可能踩到的东西</h1>
+<div class="sub">左边是正常路径，右边三块是“真实世界会不一样的三个维度”——平台、环境、已知坑</div>
+
+<div class="top">
+  <div class="who"><div class="big">用户 / Agent</div>
+    <small>目标：装一次，之后不用记<br>失败模式：钩子没生效却以为生效了</small></div>
+
+  <div class="branches">
+    <div class="br b1"><b>① 安装</b> <code>npm i -g dsh-signoff</code>（或 <code>npx dsh-signoff</code>）
+      <span class="muted">· 硬要求只有 Node ≥18 与 git<br>全局装的是命令，项目里不产生依赖<br>公司网络下 npx 可能被代理挡</span></div>
+    <div class="br b2"><b>② 初始化</b> <code>signoff init</code>
+      <span class="muted">· 需要保留已有钩子时加 <code>--chain</code><br>想让测试命令固定下来加 <code>--lock-test</code><br>先看会写什么加 <code>--dry-run</code><br>不想动 CI 加 <code>--no-ci</code></span></div>
+    <div class="br b3"><b>③ 日常</b> <code>git commit</code> 自动跑五关
+      <span class="muted">· 红了就按提示修，不绕过<br>不确定为什么加 <code>signoff doctor</code><br>想知道某关规则用 <code>signoff explain p2</code><br>想查“谁真的过了”用 <code>signoff audit --since-install</code></span></div>
+    <div class="br b4"><b>④ 排错顺序（别跳步）</b> <code>doctor</code> → <code>doctor --fix</code> → <code>explain &lt;gate&gt;</code> → 改配置
+      <span class="muted">· 90% 的“没反应”是钩子被别的工具覆盖或没有执行位<br>改阈值是最后一招，改之前先问“这条断言是不是本来就该有”</span></div>
+    <div class="br b5"><b>⑤ 退出 / 边界</b> <code>signoff uninstall</code> 三档（默认 / <code>--keep-config</code> / <code>--all</code>）
+      <span class="muted">· 它不测“代码好不好”，只判“这次完成是否可证明”<br>锁是单机单仓库尽力而为，不是分布式锁</span></div>
+  </div>
+</div>
+
+<div class="grid3">
+  <div class="panel">
+    <h2>平台差异</h2>
+    <table>
+      <tr><th>平台</th><th>会不一样的地方</th></tr>
+      <tr><td class="k">Windows</td><td>钩子用 <code>.ps1</code>/<code>.cmd</code> 启动器；执行位不生效；控制台默认 GBK，中文输出可能显示乱码（内容本身没坏）</td></tr>
+      <tr><td class="k">macOS / Linux</td><td>钩子必须有执行位（<code>init</code> 会设，<code>doctor --fix</code> 能补）；<code>/bin/sh</code> 语义差异</td></tr>
+      <tr><td class="k">容器 / CI</td><td>常没有 <code>user.name</code>/<code>user.email</code>，提交会失败，与闸门无关</td></tr>
+      <tr><td class="k">SMB / NFS</td><td>锁的原子性无法被证明；mkdir 比 O_EXCL 可靠，但仍属尽力而为</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>环境差异</h2>
+    <table>
+      <tr><th>环境</th><th>症状</th></tr>
+      <tr><td class="k">Node 版本</td><td>18/20/22/26 都在 CI 里测过；更老的 Node 不支持</td></tr>
+      <tr><td class="k">浅克隆</td><td>审计需要基线提交可达；CI 必须 <code>fetch-depth: 0</code>，本地 <code>--depth 1</code> 会判红</td></tr>
+      <tr><td class="k">monorepo</td><td>在子目录跑时，配置与状态目录按“仓库根”识别；子包各自 <code>init</code> 会造成两套钩子，用 <code>doctor</code> 看出重复</td></tr>
+      <tr><td class="k">无测试的仓库</td><td>P1 会退化到后备命令；命中不了就如实报“未识别到测试命令”，不假装通过</td></tr>
+      <tr><td class="k">代理 / 离线</td><td>除 <code>npx</code> 取包外不联网；闸门本身离线可用</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>可能的坑（现象 → 处置）</h2>
+    <table>
+      <tr><th>现象</th><th>处置</th></tr>
+      <tr><td class="risk">commit 没跑闸门</td><td class="fix">钩子被 husky 等覆盖 → <code>init --chain</code>；<code>doctor</code> 会指名是谁占了钩子</td></tr>
+      <tr><td class="risk">P1 卡住 / 选错命令</td><td class="fix"><code>init --lock-test</code> 固定本机识别结果；或 <code>--test-cmd</code></td></tr>
+      <tr><td class="risk">audit 报 not an ancestor</td><td class="fix">rebase/强推/换克隆 → <code>init --reset-install</code>；想审计别的时间窗用 <code>--range A..B</code></td></tr>
+      <tr><td class="risk">锁等待超时</td><td class="fix">调 <code>SIGNOFF_LOCK_WAIT_MS</code>；确认无进程后删 <code>.signoff/lock/</code></td></tr>
+      <tr><td class="risk">P2 过严 / 过松</td><td class="fix">改 <code>config.json</code> 阈值；<code>--strict</code> 是给“有场景无断言”用的</td></tr>
+      <tr><td class="risk">P5 误报</td><td class="fix">占位符只在词边界命中；中文复合词不会误伤。真误报就改写措辞，别改词表</td></tr>
+      <tr><td class="risk">CI 里 P4 判红</td><td class="fix">workflow 缺 <code>fetch-depth: 0</code>，基线提交不可达</td></tr>
+    </table>
+  </div>
+</div>
+</body></html>
