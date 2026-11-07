@@ -149,6 +149,17 @@ signoff secrets --all --json # 全仓库扫一遍，一条 JSON 判决
 - **CI 直接标到行**：`GITHUB_ACTIONS=true` 时，密钥/覆盖率发现输出 `::error file=…,line=…` 注解并写步骤摘要，
   PR 页面直接看到，不用翻日志。
 
+### 规则包、预设与编辑器（3.14.0 起）
+
+- **P5 规则包**：`--pack zh|en|both`。中文词表是默认值，行为不变；`en` 用词边界匹配
+  （`very` 不会命中 `delivery`），`both` 两套一起跑并按行去重。`--rules rules.json` 追加自定义词表
+  （`ai_words` / `absolute` / `adverbs` / `claims` / `placeholder`），也可写进 `.signoff/config.json`
+  的 `p5` 或 `signoff.json` 的 `p5`。
+- **场景预设**：`signoff init --preset node|python|go|java`，一次给出预算、文档目录、覆盖率阈值和规则包；
+  `test_cmd` 仍交给自动探测，克隆到没有该脚本的机器也不会锁死。
+- **VS Code**：`signoff init --editor vscode` 写 `.vscode/tasks.json`（guard / all / secrets / cov / audit / status）
+  与 problem matcher，失败直接落到 Problems 面板；已存在的任务只合并不覆盖。
+
 ## 三、在其它代码过程里能干什么
 
 | 场景 | 五关怎么用 |
@@ -290,6 +301,18 @@ Five gates, five commands, the exit code is the verdict. Each gate maps to one w
   measured", not "passed".
 - Under `GITHUB_ACTIONS=true`, findings become `::error file=...,line=...` annotations plus a step
   summary, so a reviewer sees them on the diff.
+
+### Rule packs, presets and editors (since 3.14.0)
+
+- `--pack zh|en|both` for gate 5. Chinese stays the default so existing output is unchanged;
+  `en` matches on word boundaries (`very` does not fire on `delivery`); `both` runs the two packs
+  and de-duplicates per line. `--rules rules.json` adds your own `ai_words` / `absolute` /
+  `adverbs` / `claims` / `placeholder`, and the same object can live in `signoff.json` (`p5`).
+- `signoff init --preset node|python|go|java` sets budget, docs, coverage threshold and rule pack.
+  `test_cmd` stays auto-detected so a machine without that script still runs something.
+- `signoff init --editor vscode` writes `.vscode/tasks.json` (guard / all / secrets / cov / audit /
+  status) plus problem matchers, so a failure lands in the Problems panel. Existing tasks are
+  merged, never replaced.
 
 ### Zero-touch
 

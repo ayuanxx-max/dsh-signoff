@@ -1014,6 +1014,64 @@ function main() {
         fs.existsSync(summaryFile) && /aws-access-key/.test(fs.readFileSync(summaryFile, "utf8")) ? 1 : 0,
         1
       );
+
+      // 9. P5 rule packs: zh stays the default, en is opt-in, both is explicit.
+      const enMd = path.join(base, "slop-en.md");
+      fs.writeFileSync(enMd, "A seamless and robust platform.\n", "utf8");
+      check("p5 zh ignores English slop", run(["p5", enMd], base, env).status, 0);
+      check("p5 --pack en flags English slop", run(["p5", "--pack", "en", enMd], base, env).status, 1);
+      check("p5 rejects an unknown pack", run(["p5", "--pack", "xx", enMd], base, env).status, 2);
+      check("p5 --pack both flags English slop", run(["p5", "--pack", "both", enMd], base, env).status, 1);
+      const rulesFile = path.join(base, "rules.json");
+      fs.writeFileSync(rulesFile, JSON.stringify({ ai_words: ["powerful"] }), "utf8");
+      const customMd = path.join(base, "custom.md");
+      fs.writeFileSync(customMd, "This is a powerful tool.\n", "utf8");
+      check("p5 rules alone do not fire on en default", run(["p5", "--rules", rulesFile, customMd], base, env).status, 1);
+      const noHitMd = path.join(base, "plain.md");
+      fs.writeFileSync(noHitMd, "This is a fast tool.\n", "utf8");
+      check("p5 custom word does not over-match", run(["p5", "--rules", rulesFile, noHitMd], base, env).status, 0);
+      const packRepo = fresh("p5pack");
+      fs.mkdirSync(path.join(packRepo, ".signoff"), { recursive: true });
+      fs.writeFileSync(path.join(packRepo, ".signoff", "config.json"), JSON.stringify({ p5: { pack: "en" } }), "utf8");
+      fs.writeFileSync(path.join(packRepo, "note.md"), "A seamless platform.\n", "utf8");
+      check("p5 reads the pack from config", run(["p5", "note.md"], packRepo, env).status, 1);
+
+      // 10. presets: one flag for budget, docs, coverage and the rule pack.
+      const preNode = fresh("preset-node");
+      check("init --preset node exits 0", run(["init", "--preset", "node", "--no-ci", "--quiet"], preNode, env).status, 0);
+      const preCfg = JSON.parse(fs.readFileSync(path.join(preNode, ".signoff", "config.json"), "utf8"));
+      check("preset sets coverage", preCfg.coverage && preCfg.coverage.min, 80);
+      check("preset sets the p5 pack", preCfg.p5.pack, "both");
+      check("preset keeps test_cmd auto-detected", preCfg.test_cmd, null);
+      check("preset sets the budget", preCfg.budget, 180);
+      const preGo = fresh("preset-go");
+      check("init --preset go exits 0", run(["init", "--preset", "go", "--no-ci", "--quiet"], preGo, env).status, 0);
+      const goCfg = JSON.parse(fs.readFileSync(path.join(preGo, ".signoff", "config.json"), "utf8"));
+      check("go preset has no coverage gate", goCfg.coverage, null);
+      check("go preset uses the en pack", goCfg.p5.pack, "en");
+      check("init rejects an unknown preset", run(["init", "--preset", "rust", "--no-ci"], fresh("preset-bad"), env).status, 2);
+
+      // 11. editor integration: tasks.json + problem matcher, merged not replaced.
+      const edRepo = fresh("editor");
+      check("init --editor vscode exits 0", run(["init", "--editor", "vscode", "--no-ci", "--quiet"], edRepo, env).status, 0);
+      const tasksPath = path.join(edRepo, ".vscode", "tasks.json");
+      const tasksJson = JSON.parse(fs.readFileSync(tasksPath, "utf8"));
+      const guardTask = tasksJson.tasks.find((t) => t.label === "signoff: guard");
+      check("tasks.json has the guard task", guardTask ? 1 : 0, 1);
+      check("guard task has a problem matcher", guardTask && guardTask.problemMatcher[0], "signoff-secret");
+      check(
+        "problem matcher definitions written",
+        fs.existsSync(path.join(edRepo, ".vscode", "signoff-problem-matchers.json")) ? 1 : 0,
+        1
+      );
+      const withMine = JSON.parse(fs.readFileSync(tasksPath, "utf8"));
+      withMine.tasks.push({ label: "my task", type: "shell", command: "echo hi" });
+      fs.writeFileSync(tasksPath, JSON.stringify(withMine, null, 2), "utf8");
+      run(["init", "--editor", "vscode", "--no-ci", "--quiet"], edRepo, env);
+      const merged = JSON.parse(fs.readFileSync(tasksPath, "utf8"));
+      check("editor merge keeps my task", merged.tasks.filter((t) => t.label === "my task").length, 1);
+      check("editor merge does not duplicate", merged.tasks.filter((t) => t.label === "signoff: guard").length, 1);
+      check("init rejects an unknown editor", run(["init", "--editor", "emacs", "--no-ci"], fresh("ed-bad"), env).status, 2);
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }

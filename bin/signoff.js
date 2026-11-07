@@ -59,7 +59,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff status                             is this repo guarded?
 signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
   signoff secrets [--staged|--all] [--json]   scan staged files for leaked credentials
-  signoff cov [--diff] [--min 80] [--json]   how much of this change the suite executed
+  signoff cov [--diff] [--min 80] [--json]   how much of this change the suite executed\n  signoff init --preset node|python|go|java   start from a curated gate config\n  signoff init --editor vscode               .vscode/tasks.json + problem matchers
   signoff explain <p1..p5>                   what a gate checks and how it decides
   signoff mcp                                serve the gates over stdio (MCP clients)
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?

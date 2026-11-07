@@ -1,3 +1,15 @@
+## 3.14.0
+
+**P2：规则包、场景预设、编辑器集成。**（258 tests）
+
+- P5 规则包：`--pack zh|en|both`；中文词表仍是默认值，`en` 用 Unicode 词边界匹配，
+  `both` 两套同跑并按行去重。`--rules` 追加自定义词表，也可写进 `config.json#p5` 或 `signoff.json#p5`。
+- 场景预设：`signoff init --preset node|python|go|java`，置预算/文档/覆盖率阈值/规则包，
+  `test_cmd` 继续自动探测（不锁死脚本）。
+- 编辑器：`signoff init --editor vscode` 生成 `.vscode/tasks.json` 与 problem matcher，
+  已存在任务只合并不覆盖。
+- `DEFAULT_CONFIG` 显式列出 `secrets/cache/docsFast/coverage/sign`，不再靠 `!== false` 推断。
+
 ## 3.13.0
 
 **P1：签名判决、增量行覆盖率、CI 注解。**（235 tests）

@@ -71,6 +71,33 @@
     "sign_key": {
       "type": "string",
       "description": "Path to the private key used for trailers."
+    },
+    "p5": {
+      "type": [
+        "string",
+        "object"
+      ],
+      "description": "Rule pack for gate 5: \"zh\" (default), \"en\", \"both\", or {pack, rules, allow}.",
+      "properties": {
+        "pack": {
+          "type": "string",
+          "enum": [
+            "zh",
+            "en",
+            "both"
+          ]
+        },
+        "rules": {
+          "type": "string",
+          "description": "Path to an extra rule JSON."
+        },
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "additionalProperties": false
