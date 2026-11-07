@@ -1072,6 +1072,20 @@ function main() {
       check("editor merge keeps my task", merged.tasks.filter((t) => t.label === "my task").length, 1);
       check("editor merge does not duplicate", merged.tasks.filter((t) => t.label === "signoff: guard").length, 1);
       check("init rejects an unknown editor", run(["init", "--editor", "emacs", "--no-ci"], fresh("ed-bad"), env).status, 2);
+      // 12. runner detection: a JS repo with a tests/ directory is still npm.
+      const jsTests = fresh("detect-js");
+      fs.writeFileSync(path.join(jsTests, "package.json"), JSON.stringify({ scripts: { test: "node test.js" } }), "utf8");
+      fs.mkdirSync(path.join(jsTests, "tests"), { recursive: true });
+      fs.writeFileSync(path.join(jsTests, "tests", "a.test.js"), "// js\n", "utf8");
+      check("detect: package.json with tests/ is npm", p1lib.detectCommands(jsTests).id, "npm");
+      const pyTests = fresh("detect-py");
+      fs.mkdirSync(path.join(pyTests, "tests"), { recursive: true });
+      fs.writeFileSync(path.join(pyTests, "tests", "test_a.py"), "def test_a():\n    assert True\n", "utf8");
+      check("detect: tests/*.py is pytest", p1lib.detectCommands(pyTests).id, "pytest-tests");
+      const bareTests = fresh("detect-bare");
+      fs.mkdirSync(path.join(bareTests, "tests"), { recursive: true });
+      fs.writeFileSync(path.join(bareTests, "tests", "data.json"), "{}", "utf8");
+      check("detect: a tests/ dir alone is not pytest", p1lib.detectCommands(bareTests).id, null);
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }

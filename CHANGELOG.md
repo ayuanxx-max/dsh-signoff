@@ -1,3 +1,14 @@
+## 3.14.1
+
+**修：`tests/` 目录不再抢走 `package.json` 的 `test` 脚本。**
+
+- 实测（全新全局安装 + 真仓库）：一个 JS 仓库只要有 `tests/` 目录，P1 会去跑
+  `python -m pytest tests -q`，在没有 pytest 的机器上 30 ms 失败——而 npm 项目带 `tests/` 极其常见。
+- 现在：`package.json` 的 `test` 脚本优先（明确的意图声明），`pytest-tests` 必须同时有 Python 证据
+  （`tests/*.py`、`pyproject.toml`、`setup.py`、`requirements.txt`、`tox.ini`、`pytest.ini`、`conftest.py`）。
+  只有 `tests/` 目录的项目不再被误判成任何 runner。
+- 3 条回归测试覆盖三种输入（261 tests）。
+
 ## 3.14.0
 
 **P2：规则包、场景预设、编辑器集成。**（258 tests）
