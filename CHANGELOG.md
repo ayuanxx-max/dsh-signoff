@@ -1,3 +1,11 @@
+## 4.1.8
+
+**4.1.7 在 npm 上被一条不可见、也不可覆盖的暂存记录占号，同内容换号发布。**
+
+- 现象：`npm publish` 返回 `E409 Cannot publish over previously staged version "4.1.7"`，
+  而 `npm stage list`（含带包名的调用）都返回空——这条暂存记录不属于当前 token。
+- 处理：内容不变，版本号升到 4.1.8 重新发布；`4.1.7` 的 tag 与 commit 保留为历史。
+
 ## 4.1.7
 
 **与 4.1.6 内容相同；4.1.6 在 npm 上有一条无法覆盖的暂存记录（`E409 Cannot publish over previously staged version`，而 `npm stage list` 对当前所有 token 均返回空），因此换号重发。**
