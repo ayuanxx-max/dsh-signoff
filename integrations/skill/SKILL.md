@@ -5,7 +5,7 @@ description: Run the SignOff gates (tests, coverage, queue, ledger, anti-slop) b
 
 # SignOff gates
 
-`signoff` is a CLI (`npm i -g dsh-signoff`). It answers one question: does this change
+`signoff` is a CLI (`npm i -g @signoff/cli`). It answers one question: does this change
 deserve the word "done"? Exit code is the verdict — `0` pass, `1` a gate failed,
 `2` usage/environment error. Never re-explain a failure from the source; run the
 command and quote its output.

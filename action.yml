@@ -10,7 +10,7 @@ inputs:
     required: false
     default: all
   version:
-    description: dsh-signoff version to install
+    description: @signoff/cli version to install
     required: false
     default: latest
 runs:
@@ -18,7 +18,7 @@ runs:
   steps:
     - name: install
       shell: bash
-      run: npm i -g dsh-signoff@${{ inputs.version }} --no-fund --no-audit
+      run: npm i -g @signoff/cli@${{ inputs.version }} --no-fund --no-audit
     - name: signoff
       shell: bash
       run: signoff ${{ inputs.args }}

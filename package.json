@@ -1,7 +1,10 @@
 {
-  "name": "dsh-signoff",
-  "version": "3.15.3",
+  "name": "@signoff/cli",
+  "version": "4.0.0",
   "description": "SignOff (落印) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
   "bin": {
     "signoff": "bin/signoff.js"

@@ -1,5 +1,5 @@
 # pre-commit hooks: https://pre-commit.com
-#   - repo: https://github.com/ayuanxx-max/dsh-signoff
+#   - repo: https://github.com/ayuanxx-max/dsh-signoff  (package @signoff/cli)
 #     rev: v3.15.0
 #     hooks: [{id: signoff-guard}]
 - id: signoff-guard
