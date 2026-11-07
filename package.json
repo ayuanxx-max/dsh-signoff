@@ -1,6 +1,6 @@
 {
   "name": "dsh-signoff",
-  "version": "3.15.0",
+  "version": "3.15.1",
   "description": "SignOff (落印) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
   "license": "MIT",
   "bin": {
@@ -14,7 +14,9 @@
     "test/",
     "README.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    ".pre-commit-hooks.yaml",
+    "action.yml"
   ],
   "engines": {
     "node": ">=18"
