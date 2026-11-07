@@ -48,6 +48,7 @@ signoff all               # p1 + p2 + p5 + p4 verify
 | --- | --- | --- |
 | 机器层 | `npm i -g` 的 postinstall 写 `core.hooksPath` → `~/.signoff/hooks` | 本机**所有**仓库，新克隆的也算 |
 | 仓库层 | postinstall（在某个仓库里执行时）或 `signoff ensure` | 该仓库的 `.git/hooks`、`.signoff/config.json`、CI workflow、ledger |
+| 仓库声明 | 仓库根提交了 `signoff.json`（`signoff init --share` 生成） | 任何克隆：机器层见到声明就自动装全五关，克隆方零操作 |
 | 关内 | 每次 commit | 已 opt-in 的仓库跑 P1–P5；未 opt-in 的仓库只跑 P1（测试必须过），不写任何状态 |
 
 ```bash
@@ -65,6 +66,8 @@ npm 11 会把 `postinstall` 放进 allowlist 提示，可能不执行——所�
 - 已 opt-in（有 `.signoff/config.json`）：pre-commit 跑全套五关，PASS 才写 marker 和 trailer。
 - 未 opt-in：只跑 P1（有测试才跑，没测试就明说"没检测到测试运行器"后放行），不写 `.signoff` 配置、不带 trailer。
 - 仓库自带的钩子不会被绕过：机器层先执行 `.git/hooks/<stage>`，它若是 signoff 的钩子就直接以它的判决为准。
+- 提交 `signoff.json` 等于「这个仓库同意 P1–P5」：`.signoff/` 是 gitignore 的，声明文件进 git，
+  所以别人克隆下来第一次 commit 就会把 hooks / config / CI 自己补上。字段见 `docs/signoff.schema.json`。
 - 临时退出：`SIGNOFF_NO_BOOTSTRAP=1`（不做自动安装）、`SIGNOFF_NO_MACHINE=1`（不跑机器层的轻量关）。
 - 撤销机器层：`signoff uninstall --global`。
 
@@ -249,10 +252,14 @@ One command, then nothing: `npm i -g dsh-signoff` writes a machine-wide `core.ho
 | --- | --- | --- |
 | machine | postinstall of the global install | every repo on this machine, including fresh clones |
 | repo | postinstall inside a repo, or `signoff ensure` | `.git/hooks`, `.signoff/config.json`, CI workflow, ledger |
+| declaration | a committed `signoff.json` (`signoff init --share`) | every clone: the machine layer sees it and builds all five gates, no local step |
 | gates | every commit | opted-in repos run all five; unopted repos run only P1 (tests), and write no state |
 
 npm 11 may hold `postinstall` behind its script allowlist (`--allow-scripts=dsh-signoff` to allow it), so the
 first gate command in a repo (`signoff p5 README.md`) installs the five gates as a fallback.
+
+Committing `signoff.json` is the repository agreeing to P1-P5: `.signoff/` is gitignored, the declaration is not,
+so a clone builds the rest on its first commit. Fields: `docs/signoff.schema.json`.
 
 Exit hatches: `SIGNOFF_NO_BOOTSTRAP=1` (no auto install), `SIGNOFF_NO_MACHINE=1` (skip the light guard),
 `signoff uninstall --global` (remove the machine layer). A repo's own hook always runs first and keeps its verdict.

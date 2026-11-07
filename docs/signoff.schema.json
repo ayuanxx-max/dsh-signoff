@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "signoff.json",
+  "description": "Repo-level opt-in for SignOff: a committed declaration makes every clone run the five gates without a local install step.",
+  "type": "object",
+  "properties": {
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "p1",
+          "p2",
+          "p3",
+          "p4",
+          "p5"
+        ]
+      },
+      "description": "Documentation only; the guard always runs P1-P5."
+    },
+    "test_cmd": {
+      "type": "string",
+      "description": "Pinned test command. Omit it unless every clone has that runner."
+    },
+    "budget": {
+      "type": "number",
+      "description": "Seconds a gate may spend before it counts as a failure."
+    },
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Docs paths P5 should read."
+    },
+    "pre_push": {
+      "type": "boolean",
+      "description": "Run the full set before a push too."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,3 +1,13 @@
+## 3.11.0（2026-11-07）
+
+- **仓库声明 `signoff.json`**：`signoff init --share` 在仓库根写一份声明并提交它，`.signoff/` 仍是 gitignore 的；
+  任何人克隆后第一次 commit，机器层看到声明就自动把 hooks / config / CI 建好并跑全套 P1–P5，克隆方零操作。
+  声明只认 `gates`（文档用）、`test_cmd`、`budget`、`docs`、`pre_push` 五个字段，schema 见 `docs/signoff.schema.json`；
+  默认不锁测试运行器，避免克隆机器上没有那个 runner 时全线飘红。
+- **MCP Registry 发布进 CI**：新增 `.github/workflows/mcp-registry.yml`，用 GitHub Actions OIDC
+  (`mcp-publisher login github-oidc`) 在 release 发布时自动推 `server.json`，不再依赖每 30 分钟失效的设备码。
+- 测试：`npm test` 增加声明生效、声明红关拦截、`init --share` 三个用例。
+
 ## 3.10.1（2026-11-07）
 
 - 兜底：npm 11 把 `postinstall` 放进脚本 allowlist 提示，可能不执行；现在**仓库里第一次跑任何一关**

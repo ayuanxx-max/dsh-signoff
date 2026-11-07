@@ -50,6 +50,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff doctor [--fix]                     show what is present; --fix repairs what it can prove
 
   signoff init [--no-ci] [--prepare] [--quiet]  install hooks + CI so the gates run themselves
+  signoff init --share                       also write signoff.json, so every clone opts in
   signoff init --chain | --lock-test | --reset-install   keep existing hooks / pin the
                                              detected runner / move the install point to HEAD
   signoff ensure [--global] [--json]         idempotent install; gates also self-install

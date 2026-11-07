@@ -775,6 +775,37 @@ function main() {
       );
       git(["add", "-A"], good, env);
       check("light guard passes a green test", run(["hook", "pre-commit"], good, { SIGNOFF_HOME: home }).status, 0);
+
+      // A committed signoff.json opts the whole repo in: the clone builds the install itself.
+      const shared = fresh("shared");
+      fs.writeFileSync(
+        path.join(shared, "package.json"),
+        JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }),
+        "utf8"
+      );
+      fs.writeFileSync(path.join(shared, "signoff.json"), JSON.stringify({ gates: ["p1", "p2", "p3", "p4", "p5"] }), "utf8");
+      git(["add", "-A"], shared, env);
+      check("declared repo passes through the machine layer", run(["hook", "pre-commit"], shared, { SIGNOFF_HOME: home }).status, 0);
+      check("declared repo installs config", fs.existsSync(path.join(shared, ".signoff", "config.json")), true);
+      check("declared repo installs hooks", fs.existsSync(path.join(shared, ".git", "hooks", "pre-commit")), true);
+
+      const sharedBad = fresh("shared-bad");
+      fs.writeFileSync(
+        path.join(sharedBad, "package.json"),
+        JSON.stringify({ scripts: { test: 'node -e "process.exit(1)"' } }),
+        "utf8"
+      );
+      fs.writeFileSync(path.join(sharedBad, "signoff.json"), "{}", "utf8");
+      git(["add", "-A"], sharedBad, env);
+      check("declared repo blocks a red gate", run(["hook", "pre-commit"], sharedBad, { SIGNOFF_HOME: home }).status, 1);
+
+      // init --share writes the declaration that makes the above work for teammates
+      const sharer = fresh("sharer");
+      const sr = run(["init", "--share", "--no-ci", "--quiet"], sharer, env);
+      check("init --share exit code", sr.status, 0, (sr.stderr || "").trim());
+      const decl = JSON.parse(fs.readFileSync(path.join(sharer, "signoff.json"), "utf8"));
+      check("init --share writes gates", Array.isArray(decl.gates) && decl.gates.length === 5 ? 1 : 0, 1);
+      check("init --share does not pin the runner", decl.test_cmd === undefined ? 1 : 0, 1);
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
     }
