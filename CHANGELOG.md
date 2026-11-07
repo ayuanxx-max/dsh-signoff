@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.3 — 2026-11-06
+
+- 新增 `signoff mcp`：一条命令把五关挂到 stdio MCP 上，`npx -y dsh-signoff mcp` 即可被任何 MCP 客户端调用。
+- 新增 `server.json`（官方 MCP Registry 清单）与 `smithery.yaml`（Smithery 配置），registry 名称 `io.github.ayuanxx-max/signoff`。
+- `signoff explain` 与 MCP 工具描述同步指向同一套判定说明。
+- 自查 164 项、Python 对等 30 项全过。
+
 ## 3.9.2 — 2026-11-06
 
 - 新增 `signoff explain p1..p5`（`--json`）：每关查什么、怎么判、怎么修，答案与代码放在一起。

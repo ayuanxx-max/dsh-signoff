@@ -38,6 +38,7 @@ const HELP = `SignOff / 落印 — make "done" provable
   signoff status                             is this repo guarded?
 signoff doctor [--json] [--fix]            why is (or isn't) it guarded? --fix repairs it
   signoff explain <p1..p5>                   what a gate checks and how it decides
+  signoff mcp                                serve the gates over stdio (MCP clients)
   signoff audit [--range A..B] [--strict]    did the commits that landed carry a trailer?
   signoff audit --since-install             only commits after the install point (refuses
                                              a point that is not an ancestor of HEAD)
@@ -138,6 +139,11 @@ if (cmd === "audit") {
   }
 }
 if (cmd === "explain") process.exit(require("../lib/explain.js").run(rest));
+if (cmd === "mcp") {
+  // stdio JSON-RPC; the module wires stdin and stays alive until the client closes it.
+  require("../integrations/mcp/server.js");
+  return;
+}
 if (GATES[cmd]) process.exit(runGate(cmd, rest));
 
 console.error(`signoff: unknown command "${cmd}"\n`);

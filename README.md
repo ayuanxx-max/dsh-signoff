@@ -135,7 +135,7 @@ signoff p5 docs README.md
 
 - **CLI**（本体）：`npm i -g dsh-signoff`，任何能起进程的地方都能调，退出码即判决。
 - **技能**：`integrations/skill/SKILL.md`，把“退出码是判决、不许绕过、先 doctor 再 explain”教给 agent。
-- **MCP 服务器**：`integrations/mcp/server.js`，给 Claude Desktop / DSH / IDE 用，五个工具，`isError` 跟随退出码。
+- **MCP 服务器**：`npx -y dsh-signoff mcp`（或 `integrations/mcp/server.js`），给 Claude Desktop / DSH / IDE 用，五个工具，`isError` 跟随退出码；官方 MCP Registry 条目为 `io.github.ayuanxx-max/signoff`。
 - **宿主插件**：可行但不推荐（只有要画 UI 时才值得），理由见 [docs/integrations.md](docs/integrations.md)。
 
 推广与可发现性的现状和做法见 [docs/promotion.md](docs/promotion.md)。

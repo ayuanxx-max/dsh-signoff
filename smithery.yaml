@@ -1,0 +1,12 @@
+# Smithery configuration: https://smithery.ai/docs/config
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required: []
+    properties:
+      cwd:
+        type: string
+        description: Repository to run the gates in (defaults to the client's working directory).
+  commandFunction: |-
+    (config) => ({ command: "npx", args: ["-y", "dsh-signoff", "mcp"], env: config.cwd ? { SIGNOFF_MCP_CWD: config.cwd } : {} })
