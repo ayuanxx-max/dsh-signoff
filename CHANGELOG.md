@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.4 — 2026-11-06
+
+- `package.json` 增加 `mcpName: io.github.ayuanxx-max/signoff`：官方 MCP Registry 会校验已发布包的
+  这个字段，缺失时拒绝发布（`NPM package 'dsh-signoff' is missing required 'mcpName' field`）。
+- `server.json` 与包版本同步到 3.9.4。
+- 自查 164 项、Python 对等 30 项全过。
+
 ## 3.9.3 — 2026-11-06
 
 - 新增 `signoff mcp`：一条命令把五关挂到 stdio MCP 上，`npx -y dsh-signoff mcp` 即可被任何 MCP 客户端调用。

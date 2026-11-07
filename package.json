@@ -1,6 +1,6 @@
 {
   "name": "dsh-signoff",
-  "version": "3.9.3",
+  "version": "3.9.4",
   "description": "SignOff (落印) — five gates that make an agent's \"done\" provable: verify, coverage, queue, ledger, anti-slop.",
   "license": "MIT",
   "bin": {
@@ -42,5 +42,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ayuanxx-max/dsh-signoff.git"
-  }
+  },
+  "mcpName": "io.github.ayuanxx-max/signoff"
 }
