@@ -814,7 +814,9 @@ function main() {
       check("install point starts without a sha", ip.sha === "" ? 1 : 0, 1);
       fs.writeFileSync(path.join(repair, "a.txt"), "a", "utf8");
       git(["add", "-A"], repair, env);
-      git(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "first"], repair, env);
+      // --no-verify: this commit only needs to exist so the install point has a sha; the
+      // repo hook would look for a global `signoff` binary the CI runner does not have.
+      git(["-c", "user.name=a", "-c", "user.email=a@b", "commit", "-qm", "first", "--no-verify"], repair, env);
       run(["init", "--no-ci", "--quiet"], repair, env);
       const ip2 = JSON.parse(fs.readFileSync(path.join(repair, ".signoff", "installed.json"), "utf8"));
       check("re-init fills the install point", /^[0-9a-f]{40}$/.test(ip2.sha) ? 1 : 0, 1);
