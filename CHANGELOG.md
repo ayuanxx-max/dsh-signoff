@@ -1,3 +1,11 @@
+## 4.0.2
+
+**修 MCP 注册表发布：`server.json` 里 `packages[0].version` 一直停在 3.9.4。**
+
+- 现象：注册表返回 400 `version '3.9.4' was not found`，所以 4.x 一直注册不上，`isLatest` 卡在 3.15.3。
+- 修法：`server.json` 的两个版本字段都由 `package.json` 派生；自测新增三条断言，版本漂移在提交前就会被拦下。
+- 这一版没有改任何功能，只让注册表能被正确发布。
+
 ## 4.0.1
 
 **修 4.0.0 的 npx 入口：`npx signoff-cli` 找不到可执行文件。**
